@@ -1,0 +1,17 @@
+import { defineConfig } from "vitest/config";
+
+// Integration tests run against famerace_test (created alongside the dev DB).
+// npm run test applies migrations first — see the "test" script in package.json.
+export default defineConfig({
+  test: {
+    dir: "packages/core/test",
+    fileParallelism: false, // tests share one database; run files serially
+    env: {
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        "postgresql://famerace:famerace@localhost:5432/famerace_test",
+    },
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
+  },
+});
