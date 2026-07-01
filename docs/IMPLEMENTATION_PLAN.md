@@ -23,23 +23,24 @@ The PRD (§16.1) calls for "Next.js or equivalent" with server-rendered public p
 | Auth | **Auth.js (email magic link + OAuth) with wallet-login adapter** | §9.1 requires email, social and wallet login plus an embedded-wallet option. |
 | Observability | Structured logging + audit log table + error tracking | §9.21 requires audit logs; trust/safety and payout reviews need traceability. |
 
-### Monorepo layout
+### Monorepo layout (as built)
 
 Modular monolith — the 14 "services" of §16.2 become domain modules behind one API layer. Split into real services only when scale demands it.
 
 ```
 famerace/
 ├── apps/
-│   └── web/                  # Next.js: public site, creator dashboard, admin, API routes
+│   └── web/                  # Next.js: public site, creator dashboard, admin, API routes,
+│                             #   Electric Backstage tokens/components, share-card route
 ├── packages/
-│   ├── db/                   # Prisma schema, migrations, seed
-│   ├── core/                 # Domain modules (see §2 below)
-│   ├── ui/                   # Electric Backstage component library + design tokens
-│   ├── cards/                # Share-card templates + satori renderer
-│   └── config/               # Shared eslint/tsconfig, copy-lint rules
-├── workers/                  # BullMQ processors (scores, feed, notifications, auctions, payouts)
+│   ├── db/                   # Prisma schema, migrations
+│   └── core/                 # Domain modules (see §2 below), curve math, ledger,
+│                             #   share-card SVG renderer, copy bank, event bus
+├── scripts/                  # seed, copylint, prisma engine bootstrap
 └── docs/
 ```
+
+Build notes vs. the original sketch: the `ui`/`cards` packages folded into `apps/web` and `packages/core` (fewer moving parts, same modularity); share cards render as dependency-free SVG instead of satori; periodic jobs (auction settlement, expiries, score recomputes, membership sweeps, crew ranking, wash-trading detection) run through one idempotent `admin.runSweeps()` — triggered opportunistically on relevant page loads and from the admin panel in dev, by a cron/worker calling the same function in production. The live feed bus is in-process with the Event table as replayable source of truth; a Redis pub/sub adapter slots in for multi-instance deployments.
 
 ---
 

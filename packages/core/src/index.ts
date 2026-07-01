@@ -21,5 +21,6 @@ export * as scores from "./modules/scores";
 export * as streetteam from "./modules/streetteam";
 export * as roster from "./modules/roster";
 export * as cards from "./modules/cards";
+export * as admin from "./modules/admin";
 export type { DraftBoardRow } from "./modules/draft";
 export type { DemandSummary } from "./modules/demand";
