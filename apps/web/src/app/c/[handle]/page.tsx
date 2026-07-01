@@ -9,6 +9,7 @@ import { withErrorRedirect } from "@/lib/action";
 import { CATEGORY_LABELS, money, num, timeAgo, countdown } from "@/lib/format";
 import { currentUser } from "@/lib/session";
 import { BackstageSection, DropsSection, MissionSection, TipBox } from "./monetization";
+import { StreetTeamSection } from "./street-team";
 
 export const dynamic = "force-dynamic";
 
@@ -271,6 +272,7 @@ export default async function CreatorPage({
         <>
           <BackstageSection creatorId={creator.id} handle={handle} displayName={creator.displayName} />
           <DropsSection creatorId={creator.id} handle={handle} />
+          <StreetTeamSection creatorId={creator.id} handle={handle} />
           <TipBox creatorId={creator.id} handle={handle} signedIn={Boolean(user)} />
         </>
       ) : null}
