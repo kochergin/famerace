@@ -8,6 +8,7 @@ import { RiskDisclosure, SectionTitle, Stat, StatusChip } from "@/components/ui"
 import { withErrorRedirect } from "@/lib/action";
 import { CATEGORY_LABELS, money, num, timeAgo, countdown } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { BackstageSection, DropsSection, MissionSection, TipBox } from "./monetization";
 
 export const dynamic = "force-dynamic";
 
@@ -264,6 +265,15 @@ export default async function CreatorPage({
           </section>
         ) : null}
       </div>
+
+      <MissionSection missions={creator.missions} handle={handle} signedIn={Boolean(user)} />
+      {creator.status === "LIVE" ? (
+        <>
+          <BackstageSection creatorId={creator.id} handle={handle} displayName={creator.displayName} />
+          <DropsSection creatorId={creator.id} handle={handle} />
+          <TipBox creatorId={creator.id} handle={handle} signedIn={Boolean(user)} />
+        </>
+      ) : null}
 
       {/* Market activity + Backer Wall */}
       {overview ? (

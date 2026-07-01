@@ -240,8 +240,11 @@ export default async function DashboardPage({
               <p className="text-sm text-lime">Mission configured ✓</p>
             ) : (
               <p className="text-sm text-muted">
-                The mission builder arrives with the missions module — your launch gate tracks it
-                automatically.
+                Your launch gate needs a first mission —{" "}
+                <Link href="/dashboard/missions" className="text-gold underline">
+                  open the mission builder
+                </Link>
+                .
               </p>
             )}
           </section>
