@@ -246,6 +246,17 @@ export async function moderateDraft(
       after: { moderationStatus: decision },
     });
     if (decision === "APPROVED") {
+      // Claim Bounty (PRD §9A.6 / §0A.10): unlocked for the first valid scout
+      // when the creator claims. Base $50, +5% of pledged demand, capped $2,500.
+      const bountyCents = Math.min(
+        250_000,
+        5_000 + Math.floor(profile.pledgedDemandTotal * 0.05),
+      );
+      await tx.claimBounty.upsert({
+        where: { draftProfileId },
+        create: { draftProfileId, amountCents: bountyCents, points: 100 },
+        update: {},
+      });
       await emitEvent(tx, {
         type: "NOMINATION_CREATED",
         draftProfileId,

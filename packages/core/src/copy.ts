@@ -37,6 +37,8 @@ export const copy = {
     "#ad / paid partnership — I may earn from fan purchases and platform activity.",
   draftNotice:
     "This is a fan-created draft profile — a demand signal, not an endorsement. No trading happens until the creator claims and verifies.",
+  creatorTermsSummary:
+    "I accept the creator terms: launch disclosures, content rules, payout policy, and that backer tokens are access/status only — never equity, debt, revenue share or ownership.",
   footerLegal:
     "Access and status tokens on FameRace are not equity, debt, revenue share or ownership of any creator. Prices can go down. See terms for details.",
 } as const;

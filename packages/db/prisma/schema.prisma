@@ -662,6 +662,7 @@ model FanDemandOrder {
   currency           String             @default("USD")
   bindingStatus      BindingStatus      @default(SOFT_INTENT)
   paymentAuthStatus  PaymentAuthStatus  @default(NONE)
+  paymentAuthRef     String?
   confirmationStatus ConfirmationStatus @default(UNCONFIRMED)
   expiresAt          DateTime
   refundStatus       RefundStatus       @default(NONE)

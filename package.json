@@ -2,7 +2,7 @@
   "name": "famerace",
   "private": true,
   "version": "0.1.0",
-  "description": "FameRace — the internet's talent draft. Back the rise.",
+  "description": "FameRace \u2014 the internet's talent draft. Back the rise.",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -13,13 +13,14 @@
     "start": "npm run start -w apps/web",
     "typecheck": "tsc -p packages/core && tsc -p apps/web --noEmit",
     "test": "npm run db:deploy:test && vitest run",
-    "db:deploy:test": "DATABASE_URL=${TEST_DATABASE_URL:-postgresql://famerace:famerace@localhost:5432/famerace_test} prisma migrate deploy --schema packages/db/prisma/schema.prisma",
+    "db:deploy:test": "DATABASE_URL=${TEST_DATABASE_URL:-postgresql://famerace:famerace@localhost:5432/famerace_test} sh scripts/prisma.sh migrate deploy --schema packages/db/prisma/schema.prisma",
     "copylint": "node scripts/copylint.mjs",
     "check": "npm run typecheck && npm run copylint && npm run test",
-    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema packages/db/prisma/schema.prisma",
-    "db:deploy": "prisma migrate deploy --schema packages/db/prisma/schema.prisma",
-    "db:seed": "tsx packages/db/src/seed.ts"
+    "db:generate": "sh scripts/prisma.sh generate --schema packages/db/prisma/schema.prisma",
+    "db:migrate": "sh scripts/prisma.sh migrate dev --schema packages/db/prisma/schema.prisma",
+    "db:deploy": "sh scripts/prisma.sh migrate deploy --schema packages/db/prisma/schema.prisma",
+    "db:seed": "tsx packages/db/src/seed.ts",
+    "postinstall": "sh scripts/fetch-prisma-engines.sh || true"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

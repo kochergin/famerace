@@ -10,6 +10,9 @@ export default defineConfig({
       DATABASE_URL:
         process.env.TEST_DATABASE_URL ??
         "postgresql://famerace:famerace@localhost:5432/famerace_test",
+      // Small launch gate so threshold transitions are testable (config env overrides).
+      LAUNCH_REQUIRED_BACKERS: "2",
+      LAUNCH_REQUIRED_DEMAND_CENTS: "20000",
     },
     testTimeout: 20_000,
     hookTimeout: 20_000,
