@@ -1,0 +1,1302 @@
+// FameRace V1 schema — implements docs/DATA_MODEL.md.
+// Conventions: cuid ids, created_at/updated_at, enum-backed status columns,
+// money as integer minor units (cents) with currency, double-entry ledger.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── enums ─────────────────────────
+
+enum Role {
+  BACKER
+  SCOUT
+  CREATOR
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+enum CreatorCategory {
+  MUSICIAN
+  INTERNET_CREATOR
+  BUILDER_FOUNDER
+  ARTIST_DESIGNER
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PayoutConfigStatus {
+  NOT_CONFIGURED
+  PENDING
+  ACTIVE
+  HELD
+}
+
+// Creator lifecycle (PRD §9.2)
+enum CreatorStatus {
+  DRAFT
+  CLAIM_STARTED
+  VERIFICATION_PENDING
+  APPROVED
+  LAUNCHING_SOON
+  LIVE
+  PAUSED
+  SUSPENDED
+  REMOVED
+}
+
+enum ClaimStatus {
+  UNCLAIMED
+  CLAIM_STARTED
+  CLAIMED
+}
+
+enum TakedownStatus {
+  NONE
+  REQUESTED
+  UNDER_REVIEW
+  REMOVED
+}
+
+enum TakedownRequestStatus {
+  RECEIVED
+  UNDER_REVIEW
+  ACTIONED
+  REJECTED
+}
+
+enum ModerationDecision {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum NominationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DUPLICATE
+}
+
+enum BountyStatus {
+  OPEN
+  LOCKED
+  PAID
+  EXPIRED
+}
+
+// Fan Demand Orders (PRD §9A.3 / §0A.3)
+enum IntentType {
+  GENESIS_PASS
+  MISSION_PLEDGE
+  MARKET_BUY
+  BACKSTAGE
+}
+
+enum BindingStatus {
+  SOFT_INTENT
+  REFUNDABLE_PLEDGE
+  PRE_AUTHORIZED
+}
+
+enum PaymentAuthStatus {
+  NONE
+  AUTHORIZED
+  CAPTURED
+  RELEASED
+  FAILED
+}
+
+enum ConfirmationStatus {
+  UNCONFIRMED
+  CONFIRMATION_WINDOW
+  CONFIRMED
+  DECLINED
+}
+
+enum RefundStatus {
+  NONE
+  PENDING
+  REFUNDED
+}
+
+// Launch Threshold Engine (PRD §9A.4)
+enum ThresholdStatus {
+  NOT_READY
+  ALMOST_READY
+  THRESHOLD_MET
+  LAUNCHING_SOON
+  LIVE
+}
+
+// Opening Batch Auction (PRD §9A.5)
+enum AuctionStatus {
+  SCHEDULED
+  COLLECTING
+  CLEARING
+  SETTLED
+  FAILED
+}
+
+enum AuctionOrderStatus {
+  CONFIRMED
+  FILLED
+  PARTIAL
+  REFUNDED
+  FAILED
+}
+
+// Market stages (PRD §9.6)
+enum MarketStatus {
+  PRE_LAUNCH_DEMAND
+  OPENING_AUCTION
+  GENESIS_CURVE
+  GRADUATION
+  MATURE
+  PAUSED
+  CLOSED
+}
+
+enum TxSide {
+  BUY
+  SELL
+}
+
+// Double-entry ledger
+enum LedgerTxType {
+  DEPOSIT
+  PLEDGE_AUTH
+  AUCTION_FILL
+  CURVE_TRADE
+  MISSION_CONTRIBUTION
+  MISSION_ESCROW_RELEASE
+  SUBSCRIPTION
+  DROP_SALE
+  TIP
+  MESSAGE_FEE
+  PAYOUT
+  REFUND
+  MATCH_FUND
+  FEE
+}
+
+enum LedgerAccount {
+  EXTERNAL
+  USER_CASH
+  CREATOR_EARNED
+  CREATOR_PENDING
+  MISSION_ESCROW
+  PLATFORM_FEES
+  SCOUT_REWARDS
+  MATCH_FUND
+}
+
+// Backstage (PRD §9.7)
+enum MembershipStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BackstageAccessType {
+  PAID
+  HOLDER_GATED
+  FREE
+}
+
+enum PostVisibility {
+  PUBLIC_PREVIEW
+  MEMBERS
+  HOLDERS
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  REMOVED
+}
+
+enum DropStatus {
+  DRAFT
+  UNDER_REVIEW
+  LIVE
+  SOLD_OUT
+  REMOVED
+}
+
+enum PaidMessageStatus {
+  SENT
+  ACCEPTED
+  RESPONDED
+  REJECTED
+  REFUNDED
+  FLAGGED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  COMPLIANCE_REVIEW
+  APPROVED
+  SENT
+  FAILED
+  HELD
+}
+
+// Missions (PRD §9.12)
+enum MissionStatus {
+  DRAFT
+  UNDER_REVIEW
+  LIVE
+  FUNDED
+  PARTIALLY_FUNDED
+  EXPIRED
+  IN_PROGRESS
+  COMPLETED
+  DISPUTED
+  REFUNDED
+}
+
+enum RefundRule {
+  ALL_OR_NOTHING
+  KEEP_WHAT_RAISED
+}
+
+// Street Team (PRD §9.13)
+enum QuestType {
+  SHARE
+  INVITE
+  CONTENT
+  PLAYLIST
+  ENGAGEMENT
+  MEME
+  TRANSLATION
+  FEEDBACK
+  LAUNCH_SUPPORT
+  BRAND_INTRO
+  EVENT
+}
+
+enum ProofType {
+  LINK
+  SCREENSHOT
+  AUTO
+}
+
+enum RewardType {
+  XP
+  BADGE
+  POINTS
+  ACCESS
+  DROP
+  SHOUTOUT
+  FEE_REBATE
+  CREW_POINTS
+}
+
+enum QuestStatus {
+  DRAFT
+  LIVE
+  CLOSED
+}
+
+enum CompletionStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum RosterSource {
+  BACKED
+  WATCHING
+  NOMINATED
+}
+
+enum CrewRole {
+  FOUNDER
+  MEMBER
+}
+
+// Live feed (PRD §9A.11)
+enum EventType {
+  NOMINATION_CREATED
+  CREATOR_CLAIMED
+  THRESHOLD_MET
+  LAUNCH_SCHEDULED
+  AUCTION_SETTLED
+  MARKET_LAUNCHED
+  USER_BACKED
+  MISSION_LAUNCHED
+  MISSION_CONTRIBUTION
+  MISSION_FUNDED
+  MISSION_COMPLETED
+  DROP_RELEASED
+  QUEST_COMPLETED
+  CREW_RANKED_UP
+  CREATOR_MILESTONE
+  DRAFT_RANK_CHANGED
+}
+
+enum EventVisibility {
+  PUBLIC
+  HOLDERS
+  PRIVATE
+}
+
+// Share cards (PRD §0A.13)
+enum CardTemplate {
+  BACKER
+  ROSTER
+  SCOUT
+  CLAIM
+  MISSION
+  BREAKOUT
+  BATTLE
+  BACKER_WALL
+  DRAFT_RANK
+  CREATOR_REVENUE
+  TASTE_SCORE
+  CREW
+}
+
+enum NotificationType {
+  CREATOR_CLAIMED
+  LAUNCH_STARTING
+  AUCTION_CONFIRMATION
+  MISSION_NEAR_FUNDING
+  MISSION_FUNDED
+  BACKSTAGE_POST
+  DROP_RELEASED
+  QUEST_AVAILABLE
+  QUEST_APPROVED
+  CREATOR_MILESTONE
+  ROSTER_UPDATE
+  TASTE_SCORE_UPDATE
+  PAYOUT_UPDATE
+  TRUST_SAFETY_ALERT
+}
+
+// Trust & safety
+enum ModerationQueue {
+  VERIFICATION
+  DRAFT_MOD
+  CONTENT
+  MISSION_REVIEW
+  PAYOUT_REVIEW
+}
+
+enum ModerationItemStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+}
+
+enum ReportReason {
+  IMPERSONATION
+  HARASSMENT
+  PROHIBITED_CATEGORY
+  FRAUD
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum FraudSignalType {
+  WASH_TRADING
+  BOT_ACTIVITY
+  DUPLICATE_PROFILE
+  PAYMENT_ABUSE
+}
+
+enum FraudSignalStatus {
+  OPEN
+  CONFIRMED
+  DISMISSED
+}
+
+// ───────────────────────── identity ─────────────────────────
+
+model User {
+  id               String     @id @default(cuid())
+  username         String     @unique
+  displayName      String
+  avatarUrl        String?
+  email            String?    @unique
+  passwordHash     String?
+  walletAddress    String?    @unique
+  country          String?
+  roles            Role[]     @default([BACKER])
+  referralCode     String     @unique
+  referredByUserId String?
+  dobAttested18    Boolean    @default(false)
+  status           UserStatus @default(ACTIVE)
+  xp               Int        @default(0)
+  points           Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  referredBy       User?             @relation("Referrals", fields: [referredByUserId], references: [id])
+  referrals        User[]            @relation("Referrals")
+  sessions         Session[]
+  badges           UserBadge[]
+  creator          Creator?
+  nominations      ScoutNomination[]
+  demandOrders     FanDemandOrder[]
+  holdings         Holding[]
+  transactions     MarketTransaction[]
+  memberships      BackstageMembership[]
+  dropPurchases    DropPurchase[]
+  tipsSent         Tip[]
+  paidMessages     PaidMessage[]
+  requestOrders    RequestOrder[]
+  contributions    MissionContribution[]
+  questCompletions QuestCompletion[]
+  rosterEntries    RosterEntry[]
+  crewMemberships  CrewMember[]
+  tasteScores      TasteScore[]
+  shareCards       ShareCard[]
+  notifications    Notification[]
+  auctionOrders    AuctionOrder[]
+  reportsFiled     Report[]          @relation("Reporter")
+  blocksMade       UserBlock[]       @relation("Blocker")
+  blocksReceived   UserBlock[]       @relation("Blocked")
+  bountiesEarned   ClaimBounty[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeType String
+  label     String
+  sourceRef String?
+  awardedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserBlock {
+  id            String   @id @default(cuid())
+  blockerUserId String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+  blocker       User     @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
+  blocked       User     @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerUserId, blockedUserId])
+}
+
+// ───────────────────────── creator ─────────────────────────
+
+model Creator {
+  id                 String             @id @default(cuid())
+  userId             String?            @unique
+  draftProfileId     String?            @unique
+  displayName        String
+  handle             String             @unique
+  category           CreatorCategory
+  bio                String?
+  story              String?
+  socialLinks        Json?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  payoutStatus       PayoutConfigStatus @default(NOT_CONFIGURED)
+  fameScore          Int                @default(0)
+  status             CreatorStatus      @default(DRAFT)
+  followerCount      Int                @default(0)
+  followerGrowth7d   Float              @default(0)
+  perks              Json?
+  launchKitApproved  Boolean            @default(false)
+  safetyApproved     Boolean            @default(false)
+  termsAcceptedAt    DateTime?
+  approvedAt         DateTime?
+  launchAt           DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user            User?                 @relation(fields: [userId], references: [id])
+  draftProfile    DraftProfile?         @relation(fields: [draftProfileId], references: [id])
+  market          CreatorMarket?
+  launchThreshold LaunchThreshold?
+  missions        Mission[]
+  backstageTiers  BackstageTier[]
+  backstagePosts  BackstagePost[]
+  memberships     BackstageMembership[]
+  drops           Drop[]
+  tips            Tip[]
+  paidMessages    PaidMessage[]
+  requestItems    CreatorRequestItem[]
+  quests          Quest[]
+  payouts         Payout[]
+  fameScores      FameScore[]
+  demandOrders    FanDemandOrder[]
+
+  @@index([status, category])
+}
+
+// ───────────────────────── draft layer ─────────────────────────
+
+// NOTE (PRD §9A.2 / §15.1): DraftProfile deliberately has NO relations to
+// CreatorMarket, Holding or any monetization table. Unclaimed profiles are
+// demand signals only — trading is structurally impossible here.
+model DraftProfile {
+  id                 String             @id @default(cuid())
+  nameOrHandle       String
+  normalizedHandle   String
+  externalLink       String?
+  category           CreatorCategory
+  reasonNominated    String?
+  nominatedByUserId  String?
+  fanCount           Int                @default(0)
+  pledgedDemandTotal Int                @default(0)
+  requestedMission   String?
+  inviteCount        Int                @default(0)
+  claimStatus        ClaimStatus        @default(UNCLAIMED)
+  takedownStatus     TakedownStatus     @default(NONE)
+  moderationStatus   ModerationDecision @default(PENDING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  nominations      ScoutNomination[]
+  demandOrders     FanDemandOrder[]
+  claimBounty      ClaimBounty?
+  takedownRequests TakedownRequest[]
+  claimedCreator   Creator?
+
+  @@unique([normalizedHandle, category])
+  @@index([moderationStatus, claimStatus])
+}
+
+model ScoutNomination {
+  id               String           @id @default(cuid())
+  scoutUserId      String
+  draftProfileId   String
+  creatorHandle    String
+  category         CreatorCategory
+  thesis           String
+  requestedMission String?
+  status           NominationStatus @default(PENDING)
+  claimResult      String?
+  createdAt        DateTime         @default(now())
+
+  scout        User         @relation(fields: [scoutUserId], references: [id])
+  draftProfile DraftProfile @relation(fields: [draftProfileId], references: [id], onDelete: Cascade)
+
+  @@index([scoutUserId])
+  @@index([draftProfileId])
+}
+
+model ClaimBounty {
+  id             String       @id @default(cuid())
+  draftProfileId String       @unique
+  amountCents    Int
+  points         Int          @default(0)
+  status         BountyStatus @default(OPEN)
+  paidToUserId   String?
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  draftProfile DraftProfile @relation(fields: [draftProfileId], references: [id], onDelete: Cascade)
+  paidTo       User?        @relation(fields: [paidToUserId], references: [id])
+}
+
+model TakedownRequest {
+  id               String                @id @default(cuid())
+  draftProfileId   String?
+  creatorId        String?
+  requesterContact String
+  reason           String
+  status           TakedownRequestStatus @default(RECEIVED)
+  resolvedByUserId String?
+  resolvedAt       DateTime?
+  createdAt        DateTime              @default(now())
+
+  draftProfile DraftProfile? @relation(fields: [draftProfileId], references: [id])
+
+  @@index([status])
+}
+
+// ───────────────────────── demand & launch ─────────────────────────
+
+model FanDemandOrder {
+  id                 String             @id @default(cuid())
+  userId             String
+  draftProfileId     String?
+  creatorId          String?
+  intentType         IntentType
+  amountCents        Int
+  currency           String             @default("USD")
+  bindingStatus      BindingStatus      @default(SOFT_INTENT)
+  paymentAuthStatus  PaymentAuthStatus  @default(NONE)
+  confirmationStatus ConfirmationStatus @default(UNCONFIRMED)
+  expiresAt          DateTime
+  refundStatus       RefundStatus       @default(NONE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id])
+  draftProfile  DraftProfile?  @relation(fields: [draftProfileId], references: [id])
+  creator       Creator?       @relation(fields: [creatorId], references: [id])
+  auctionOrders AuctionOrder[]
+
+  @@index([draftProfileId, bindingStatus])
+  @@index([creatorId, confirmationStatus])
+  @@index([userId])
+}
+
+model LaunchThreshold {
+  id                       String          @id @default(cuid())
+  creatorId                String          @unique
+  requiredBackers          Int
+  requiredDemandCents      Int
+  requiredPerksCount       Int             @default(3)
+  missionConfigured        Boolean         @default(false)
+  perksConfigured          Boolean         @default(false)
+  creatorVerified          Boolean         @default(false)
+  launchKitApproved        Boolean         @default(false)
+  safetyApproved           Boolean         @default(false)
+  confirmedBackers         Int             @default(0)
+  confirmedDemandCents     Int             @default(0)
+  status                   ThresholdStatus @default(NOT_READY)
+  updatedAt                DateTime        @updatedAt
+
+  creator Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}
+
+model OpeningAuction {
+  id                 String        @id @default(cuid())
+  creatorMarketId    String        @unique
+  startTime          DateTime
+  endTime            DateTime
+  status             AuctionStatus @default(SCHEDULED)
+  clearingPriceCents Int?
+  clearingResult     Json?
+  failedPaymentCount Int           @default(0)
+  refundStatus       RefundStatus  @default(NONE)
+  launchedAt         DateTime?
+  createdAt          DateTime      @default(now())
+
+  market CreatorMarket  @relation(fields: [creatorMarketId], references: [id])
+  orders AuctionOrder[]
+}
+
+model AuctionOrder {
+  id               String             @id @default(cuid())
+  auctionId        String
+  userId           String
+  demandOrderId    String?
+  amountCents      Int
+  fillUnits        Int                @default(0)
+  fillAmountCents  Int                @default(0)
+  status           AuctionOrderStatus @default(CONFIRMED)
+  createdAt        DateTime           @default(now())
+
+  auction     OpeningAuction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id])
+  demandOrder FanDemandOrder? @relation(fields: [demandOrderId], references: [id])
+
+  @@index([auctionId])
+  @@index([userId])
+}
+
+// ───────────────────────── market ─────────────────────────
+
+model CreatorMarket {
+  id               String       @id @default(cuid())
+  creatorId        String       @unique
+  ticker           String       @unique
+  status           MarketStatus @default(PRE_LAUNCH_DEMAND)
+  // linear bonding curve: price(supply) = basePriceCents + slopeMilliCents * supply / 1000
+  basePriceCents   Int          @default(100)
+  slopeMilliCents  Int          @default(50)
+  priceCents       Int          @default(100)
+  supplyUnits      Int          @default(0)
+  holderCount      Int          @default(0)
+  volumeTotalCents Int          @default(0)
+  creatorFeeBps    Int          @default(35)
+  protocolFeeBps   Int          @default(65)
+  scoutFeeBps      Int          @default(10)
+  launchTime       DateTime?
+  pausedReason     String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  creator      Creator             @relation(fields: [creatorId], references: [id])
+  auction      OpeningAuction?
+  holdings     Holding[]
+  transactions MarketTransaction[]
+}
+
+model Holding {
+  id              String   @id @default(cuid())
+  userId          String
+  creatorMarketId String
+  amountUnits     Int      @default(0)
+  avgEntryCents   Int      @default(0)
+  firstBackedAt   DateTime @default(now())
+  backerRank      Int?
+  isGenesis       Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  user   User          @relation(fields: [userId], references: [id])
+  market CreatorMarket @relation(fields: [creatorMarketId], references: [id])
+
+  @@unique([userId, creatorMarketId])
+  @@index([creatorMarketId, backerRank])
+}
+
+model MarketTransaction {
+  id              String   @id @default(cuid())
+  creatorMarketId String
+  userId          String
+  side            TxSide
+  units           Int
+  grossCents      Int
+  feeBreakdown    Json
+  priceAfterCents Int
+  ledgerTxId      String?
+  createdAt       DateTime @default(now())
+
+  market CreatorMarket @relation(fields: [creatorMarketId], references: [id])
+  user   User          @relation(fields: [userId], references: [id])
+
+  @@index([creatorMarketId, createdAt])
+  @@index([userId])
+}
+
+// ───────────────────────── ledger ─────────────────────────
+
+model LedgerTx {
+  id        String       @id @default(cuid())
+  type      LedgerTxType
+  reference Json?
+  createdAt DateTime     @default(now())
+  entries   LedgerEntry[]
+
+  @@index([type, createdAt])
+}
+
+model LedgerEntry {
+  id         String        @id @default(cuid())
+  txId       String
+  account    LedgerAccount
+  userId     String?
+  creatorId  String?
+  missionId  String?
+  deltaCents Int
+  currency   String        @default("USD")
+
+  tx LedgerTx @relation(fields: [txId], references: [id], onDelete: Cascade)
+
+  @@index([account, userId])
+  @@index([account, creatorId])
+  @@index([account, missionId])
+}
+
+// ───────────────────────── monetization ─────────────────────────
+
+model BackstageTier {
+  id              String              @id @default(cuid())
+  creatorId       String
+  name            String
+  priceCents      Int
+  accessType      BackstageAccessType @default(PAID)
+  minHoldingUnits Int                 @default(0)
+  benefits        Json?
+  createdAt       DateTime            @default(now())
+
+  creator     Creator               @relation(fields: [creatorId], references: [id])
+  memberships BackstageMembership[]
+
+  @@index([creatorId])
+}
+
+model BackstageMembership {
+  id            String           @id @default(cuid())
+  userId        String
+  creatorId     String
+  tierId        String
+  status        MembershipStatus @default(ACTIVE)
+  startedAt     DateTime         @default(now())
+  renewsAt      DateTime
+  priceCents    Int
+  canceledAt    DateTime?
+
+  user    User          @relation(fields: [userId], references: [id])
+  creator Creator       @relation(fields: [creatorId], references: [id])
+  tier    BackstageTier @relation(fields: [tierId], references: [id])
+
+  @@unique([userId, creatorId])
+  @@index([creatorId, status])
+}
+
+model BackstagePost {
+  id         String         @id @default(cuid())
+  creatorId  String
+  title      String
+  body       String
+  preview    String?
+  mediaUrl   String?
+  visibility PostVisibility @default(MEMBERS)
+  status     PostStatus     @default(PUBLISHED)
+  createdAt  DateTime       @default(now())
+
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  @@index([creatorId, status, createdAt])
+}
+
+model Drop {
+  id            String     @id @default(cuid())
+  creatorId     String
+  title         String
+  description   String
+  mediaUrl      String?
+  previewText   String?
+  priceCents    Int
+  quantityLimit Int?
+  soldCount     Int        @default(0)
+  status        DropStatus @default(DRAFT)
+  revenueCents  Int        @default(0)
+  createdAt     DateTime   @default(now())
+
+  creator   Creator        @relation(fields: [creatorId], references: [id])
+  purchases DropPurchase[]
+
+  @@index([creatorId, status])
+}
+
+model DropPurchase {
+  id         String   @id @default(cuid())
+  dropId     String
+  userId     String
+  priceCents Int
+  ledgerTxId String?
+  createdAt  DateTime @default(now())
+
+  drop Drop @relation(fields: [dropId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([dropId, userId])
+}
+
+model Tip {
+  id          String   @id @default(cuid())
+  fromUserId  String
+  creatorId   String
+  amountCents Int
+  message     String?
+  isPublic    Boolean  @default(true)
+  ledgerTxId  String?
+  createdAt   DateTime @default(now())
+
+  fromUser User    @relation(fields: [fromUserId], references: [id])
+  creator  Creator @relation(fields: [creatorId], references: [id])
+
+  @@index([creatorId, createdAt])
+}
+
+model PaidMessage {
+  id         String            @id @default(cuid())
+  fromUserId String
+  creatorId  String
+  priceCents Int
+  body       String
+  response   String?
+  status     PaidMessageStatus @default(SENT)
+  ledgerTxId String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  fromUser User    @relation(fields: [fromUserId], references: [id])
+  creator  Creator @relation(fields: [creatorId], references: [id])
+
+  @@index([creatorId, status])
+}
+
+model CreatorRequestItem {
+  id           String   @id @default(cuid())
+  creatorId    String
+  title        String
+  priceCents   Int
+  deliveryDays Int
+  available    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  creator Creator        @relation(fields: [creatorId], references: [id])
+  orders  RequestOrder[]
+
+  @@index([creatorId])
+}
+
+model RequestOrder {
+  id         String   @id @default(cuid())
+  itemId     String
+  userId     String
+  status     String   @default("REQUESTED")
+  ledgerTxId String?
+  createdAt  DateTime @default(now())
+
+  item CreatorRequestItem @relation(fields: [itemId], references: [id])
+  user User               @relation(fields: [userId], references: [id])
+}
+
+model Payout {
+  id               String       @id @default(cuid())
+  creatorId        String
+  amountCents      Int
+  rail             String       @default("DEV")
+  status           PayoutStatus @default(REQUESTED)
+  reviewedByUserId String?
+  ledgerTxId       String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  @@index([creatorId, status])
+  @@index([status])
+}
+
+// ───────────────────────── missions ─────────────────────────
+
+model Mission {
+  id                String        @id @default(cuid())
+  creatorId         String
+  title             String
+  category          String?
+  goalCents         Int
+  fundedCents       Int           @default(0)
+  matchCents        Int           @default(0)
+  deadline          DateTime
+  useOfFunds        String
+  rewardTiers       Json
+  proofRequirements String?
+  refundRule        RefundRule    @default(ALL_OR_NOTHING)
+  matchEligible     Boolean       @default(false)
+  matchCapCents     Int           @default(0)
+  status            MissionStatus @default(DRAFT)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  creator       Creator               @relation(fields: [creatorId], references: [id])
+  contributions MissionContribution[]
+  updates       MissionUpdate[]
+
+  @@index([creatorId, status])
+  @@index([status, deadline])
+}
+
+model MissionContribution {
+  id          String   @id @default(cuid())
+  missionId   String
+  userId      String
+  amountCents Int
+  matchCents  Int      @default(0)
+  tierLabel   String?
+  ledgerTxId  String?
+  refunded    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  mission Mission @relation(fields: [missionId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([missionId])
+  @@index([userId])
+}
+
+model MissionUpdate {
+  id        String   @id @default(cuid())
+  missionId String
+  title     String
+  body      String
+  proofUrl  String?
+  createdAt DateTime @default(now())
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId, createdAt])
+}
+
+model MatchFund {
+  id           String   @id @default(cuid())
+  seasonName   String   @unique
+  totalCents   Int
+  spentCents   Int      @default(0)
+  matchRatio   Float    @default(0.25)
+  creatorCap   Int      @default(500000)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+// ───────────────────────── social & growth ─────────────────────────
+
+model Quest {
+  id                 String       @id @default(cuid())
+  creatorId          String
+  title              String
+  description        String
+  type               QuestType
+  proofType          ProofType    @default(LINK)
+  rewardType         RewardType   @default(XP)
+  rewardAmount       Int          @default(10)
+  deadline           DateTime?
+  maxCompletions     Int?
+  completionCount    Int          @default(0)
+  verificationMethod String       @default("CREATOR")
+  status             QuestStatus  @default(LIVE)
+  createdAt          DateTime     @default(now())
+
+  creator     Creator           @relation(fields: [creatorId], references: [id])
+  completions QuestCompletion[]
+
+  @@index([creatorId, status])
+}
+
+model QuestCompletion {
+  id        String           @id @default(cuid())
+  questId   String
+  userId    String
+  proofRef  String?
+  status    CompletionStatus @default(SUBMITTED)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  quest Quest @relation(fields: [questId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([questId, userId])
+  @@index([status])
+}
+
+model RosterEntry {
+  id             String       @id @default(cuid())
+  userId         String
+  draftProfileId String?
+  creatorId      String?
+  source         RosterSource @default(WATCHING)
+  addedAt        DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, draftProfileId])
+  @@unique([userId, creatorId])
+  @@index([userId])
+}
+
+model Crew {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String?
+  category        CreatorCategory?
+  score           Int      @default(0)
+  missionsFunded  Int      @default(0)
+  questsCompleted Int      @default(0)
+  creatorsClaimed Int      @default(0)
+  rank            Int?
+  createdAt       DateTime @default(now())
+
+  members CrewMember[]
+}
+
+model CrewMember {
+  id       String   @id @default(cuid())
+  crewId   String
+  userId   String
+  role     CrewRole @default(MEMBER)
+  points   Int      @default(0)
+  joinedAt DateTime @default(now())
+
+  crew Crew @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([crewId, userId])
+  @@unique([userId])
+}
+
+model TasteScore {
+  id           String   @id @default(cuid())
+  userId       String
+  score        Int
+  percentile   Float
+  rank         Int
+  drivers      Json
+  weeklyChange Int      @default(0)
+  computedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, computedAt])
+}
+
+model FameScore {
+  id                 String   @id @default(cuid())
+  creatorId          String
+  score              Int
+  previousScore      Int      @default(0)
+  drivers            Json
+  categoryPercentile Float    @default(0)
+  confidence         Float    @default(0.5)
+  computedAt         DateTime @default(now())
+
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  @@index([creatorId, computedAt])
+}
+
+// ───────────────────────── feed, cards, notifications ─────────────────────────
+
+model Event {
+  id              String          @id @default(cuid())
+  type            EventType
+  actorId         String?
+  creatorId       String?
+  draftProfileId  String?
+  relatedObjectId String?
+  message         String
+  metadata        Json?
+  visibility      EventVisibility @default(PUBLIC)
+  createdAt       DateTime        @default(now())
+
+  @@index([visibility, createdAt(sort: Desc)])
+}
+
+model ShareCard {
+  id               String       @id @default(cuid())
+  userId           String?
+  template         CardTemplate
+  subjectRef       String
+  title            String
+  subtitle         String?
+  stats            Json?
+  deepLink         String
+  moderationStatus ModerationDecision @default(APPROVED)
+  createdAt        DateTime     @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([template, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+// ───────────────────────── trust & safety ─────────────────────────
+
+model ModerationItem {
+  id             String               @id @default(cuid())
+  objectType     String
+  objectId       String
+  queue          ModerationQueue
+  status         ModerationItemStatus @default(PENDING)
+  assigneeUserId String?
+  notes          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([objectType, objectId, queue])
+  @@index([queue, status])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterUserId String
+  objectType     String
+  objectId       String
+  reason         ReportReason
+  detail         String?
+  status         ReportStatus @default(OPEN)
+  createdAt      DateTime     @default(now())
+
+  reporter User @relation("Reporter", fields: [reporterUserId], references: [id])
+
+  @@index([status])
+}
+
+model FraudSignal {
+  id         String            @id @default(cuid())
+  objectType String
+  objectId   String
+  signal     FraudSignalType
+  score      Float             @default(0)
+  metadata   Json?
+  status     FraudSignalStatus @default(OPEN)
+  createdAt  DateTime          @default(now())
+
+  @@index([status, signal])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorType  String   @default("USER")
+  action     String
+  objectType String
+  objectId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([objectType, objectId, createdAt])
+  @@index([actorId])
+}
+
+// ───────────────────────── season config ─────────────────────────
+
+model SeasonConfig {
+  id                     String   @id @default(cuid())
+  name                   String   @unique
+  active                 Boolean  @default(true)
+  requiredBackers        Int      @default(250)
+  requiredDemandCents    Int      @default(1000000)
+  requiredPerksCount     Int      @default(3)
+  genesisPassTiersCents  Json     @default("[2500, 10000, 50000]")
+  maxLaunchesPerDay      Int      @default(5)
+  createdAt              DateTime @default(now())
+}

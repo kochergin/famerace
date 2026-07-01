@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* ─── Electric Backstage design tokens (PRD §0B.2–§0B.4) ───
+   Dark, premium, fast, alive. NBA Draft Board × Spotify Wrapped ×
+   Robinhood × backstage pass × trading cards. Not a DEX, not a casino,
+   not generic web3 purple. */
+@theme {
+  /* Base */
+  --color-ink: #060608; /* deep black */
+  --color-graphite: #131318;
+  --color-panel: #1a1a21;
+  --color-edge: #2a2a33;
+  --color-chalk: #f2f1ec; /* off-white */
+  --color-muted: #8f8fa0;
+
+  /* Primary accents */
+  --color-lime: #c9f73a; /* electric lime — Launching */
+  --color-pink: #ff3d8d; /* hot pink — Trending */
+  --color-volt: #3d7bff; /* electric blue — Draft */
+  --color-chrome: #d9dbe3; /* chrome/silver */
+  --color-gold: #f0c33c; /* mission funded */
+  --color-velvet: #7a1f33; /* backstage velvet red */
+
+  --font-display: "Arial Narrow", "Helvetica Neue", ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-chalk);
+  font-feature-settings: "tnum";
+}
+
+/* Poster-style display headings (§0B.4: wide/condensed/bold, athletic) */
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+
+/* Tabular numerals for all market/stat figures */
+.stat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badge chip (§15A.3: collectible feel, uppercase, compact) */
+.chip {
+  @apply inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider;
+}
+
+/* Card surface: trading-card feel with a subtle spotlight edge */
+.card {
+  @apply rounded-lg border border-edge bg-panel;
+  background-image: radial-gradient(120% 80% at 50% 0%, rgb(255 255 255 / 0.04), transparent 60%);
+}
+
+.card-hot {
+  box-shadow: 0 0 24px rgb(255 61 141 / 0.14);
+}
+
+/* Progress bar filling "like rocket fuel" (§0B.10) */
+.fuel {
+  @apply h-2 w-full overflow-hidden rounded-full bg-edge;
+}
+.fuel > div {
+  @apply h-full rounded-full;
+  background: linear-gradient(90deg, var(--color-volt), var(--color-lime));
+  transition: width 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Live ticker row entrance */
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.feed-in {
+  animation: feed-in 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* UNCLAIMED stamp (§0B.10) */
+.stamp {
+  @apply rounded border-2 px-2 py-0.5 text-xs font-black uppercase tracking-widest;
+  transform: rotate(-4deg);
+}
+
+/* Countdown pulse */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
