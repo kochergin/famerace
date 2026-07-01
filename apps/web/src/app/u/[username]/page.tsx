@@ -1,12 +1,30 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { DomainError, roster as rosterMod } from "@famerace/core";
+import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { DomainError, roster as rosterMod, safety } from "@famerace/core";
+import { prisma } from "@famerace/db";
+import { ReportForm } from "@/components/report";
+import { withErrorRedirect } from "@/lib/action";
 import { SectionTitle, Stat } from "@/components/ui";
 import { num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
 import { logoutAction } from "@/app/actions/auth";
 
 export const dynamic = "force-dynamic";
+
+async function blockAction(formData: FormData) {
+  "use server";
+  const username = String(formData.get("username"));
+  const { requireCurrentUser } = await import("@/lib/session");
+  const viewer = await requireCurrentUser().catch(() => null);
+  if (!viewer) redirect("/join");
+  await withErrorRedirect(`/u/${username}`, async () => {
+    if (formData.get("unblock") === "1") await safety.unblockUser(viewer.id, username);
+    else await safety.blockUser(viewer.id, username);
+  });
+  revalidatePath(`/u/${username}`);
+  redirect(`/u/${username}`);
+}
 
 export default async function UserProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -21,6 +39,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   const { user, taste, nominations, claimed, roster } = profile;
   const isSelf = viewer?.id === user.id;
   const crew = user.crewMemberships[0]?.crew;
+  const blocked =
+    viewer && !isSelf
+      ? (await prisma.userBlock.findUnique({
+          where: { blockerUserId_blockedUserId: { blockerUserId: viewer.id, blockedUserId: user.id } },
+        })) !== null
+      : false;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -41,11 +65,30 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
           </p>
         </div>
         {isSelf ? (
-          <form action={logoutAction}>
-            <button className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-muted hover:border-pink hover:text-pink">
-              Sign out
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/settings"
+              className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-muted hover:border-lime hover:text-lime"
+            >
+              Settings
+            </Link>
+            <form action={logoutAction}>
+              <button className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-muted hover:border-pink hover:text-pink">
+                Sign out
+              </button>
+            </form>
+          </div>
+        ) : viewer ? (
+          <div className="text-right">
+            <form action={blockAction}>
+              <input type="hidden" name="username" value={user.username} />
+              {blocked ? <input type="hidden" name="unblock" value="1" /> : null}
+              <button className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-muted hover:border-pink hover:text-pink">
+                {blocked ? "Unblock" : "Block"}
+              </button>
+            </form>
+            <ReportForm objectType="User" objectId={user.id} backTo={`/u/${user.username}`} />
+          </div>
         ) : null}
       </div>
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { audit } from "../statemachine";
+import { enforceProhibited } from "./safety";
 
 // Draft layer (PRD §9A.1–§9A.2, §9.3): anyone can draft, only claimed
 // creators go live. DraftProfile has no market relations by design.
@@ -34,10 +35,13 @@ export function normalizeHandle(raw: string): string {
  * category attaches the nomination to the existing profile instead of
  * creating a second one — "17 scouts inviting" is a feature, not a dupe.
  */
-export async function nominate(scoutUserId: string, input: z.infer<typeof nominateSchema>) {
+export async function nominate(scoutUserId: string, input: z.input<typeof nominateSchema>) {
   const data = nominateSchema.parse(input);
   const normalizedHandle = normalizeHandle(data.nameOrHandle);
   if (!normalizedHandle) throw new DomainError("BAD_HANDLE", "Could not read a handle from that input");
+  // Prohibited categories never enter the draft (§15.4); soft hits get
+  // FLAGGED moderation priority below.
+  const flagged = enforceProhibited("nomination", data.nameOrHandle, data.thesis, data.requestedMission);
 
   return prisma.$transaction(async (tx) => {
     let profile = await tx.draftProfile.findUnique({
@@ -73,8 +77,19 @@ export async function nominate(scoutUserId: string, input: z.infer<typeof nomina
       // New profiles enter the moderation queue (PRD §9A.1) before they
       // appear on the public board.
       await tx.moderationItem.create({
-        data: { objectType: "DraftProfile", objectId: profile.id, queue: "DRAFT_MOD" },
+        data: {
+          objectType: "DraftProfile",
+          objectId: profile.id,
+          queue: "DRAFT_MOD",
+          notes: flagged ? "Auto-flagged: touches a sensitive-category term (§15.4)" : undefined,
+        },
       });
+      if (flagged) {
+        await tx.draftProfile.update({
+          where: { id: profile.id },
+          data: { moderationStatus: "FLAGGED" },
+        });
+      }
     }
 
     const scout = await tx.user.findUniqueOrThrow({

@@ -18,6 +18,8 @@ import * as backstage from "../packages/core/src/modules/backstage";
 import * as drops from "../packages/core/src/modules/drops";
 import * as streetteam from "../packages/core/src/modules/streetteam";
 import * as scores from "../packages/core/src/modules/scores";
+import * as messages from "../packages/core/src/modules/messages";
+import * as requests from "../packages/core/src/modules/requests";
 import { assertLedgerBalanced } from "../packages/core/src/modules/ledger";
 
 async function main() {
@@ -116,6 +118,11 @@ async function main() {
     await draft.recordInvite(fans[i % fans.length]!.id, profile.id);
   }
 
+  console.log("seed: Season 1 Match Fund…");
+  await prisma.matchFund.create({
+    data: { seasonName: "Genesis Season", totalCents: 50_000_000, matchRatio: 0.25, creatorCap: 500_000 },
+  });
+
   console.log("seed: MIRA claims and launches…");
   const mira = await claim.startClaim(miraUser.id, miraDraft.id);
   await claim.submitVerification(miraUser.id, mira.id, {
@@ -147,6 +154,7 @@ async function main() {
       { thresholdCents: 25_000, reward: "Private listening party invite" },
     ],
     refundRule: "ALL_OR_NOTHING",
+    matchEligible: true,
   });
   await claim.approveLaunchKit(admin.id, mira.id);
   await claim.scheduleLaunch(admin.id, mira.id, new Date(Date.now() + 3600_000));
@@ -197,6 +205,18 @@ async function main() {
   await drops.purchaseDrop(fans[0]!.id, miraDrop.id);
   await drops.purchaseDrop(fans[3]!.id, miraDrop.id);
   await drops.tip(fans[1]!.id, mira.id, 2_500, "That bridge. THAT BRIDGE.");
+  const requestItem = await requests.configureItem(miraUser.id, {
+    title: "Private listening party (video call)",
+    priceCents: 25_000,
+    deliveryDays: 14,
+  });
+  await requests.orderItem(fans[2]!.id, requestItem.id);
+  const paidMsg = await messages.sendPaidMessage(fans[1]!.id, {
+    creatorId: mira.id,
+    priceCents: 1_500,
+    body: "Would you ever do an acoustic version of Neon Rain? I'd fund a whole session for it.",
+  });
+  await messages.respondToMessage(miraUser.id, paidMsg.id, "Already recording it — backers hear it first next week.");
   const quest = await streetteam.createQuest(miraUser.id, {
     title: "Clip the chorus for TikTok",
     description: "Cut a 15s clip of the chorus from the live session and post it with #BackTheRise.",

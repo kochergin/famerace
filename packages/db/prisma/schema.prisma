@@ -454,6 +454,7 @@ model User {
   referralCode     String     @unique
   referredByUserId String?
   dobAttested18    Boolean    @default(false)
+  notificationsMuted Boolean  @default(false)
   status           UserStatus @default(ACTIVE)
   xp               Int        @default(0)
   points           Int        @default(0)

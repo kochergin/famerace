@@ -123,6 +123,10 @@ Per §5.5: unauthorized celebrity tokens, open token factory, full prediction ma
 
 ---
 
+## 5A. Post-audit gap closure
+
+A full PRD audit after the six build phases found and closed 12 gaps: paid messages / backer inbox (§9.10), creator request menu (§9.11), launch kit generator with built-in disclosures (§9.18/§0A.11), notifications UI + mute setting (§9.19/§9.1), FameRace 100 rankings (§4.6), user-facing reporting & blocking (§15.9), the prohibited-content blocklist wired into nominations/missions/posts/drops/messages (§15.4), crew mission/claim counters (§9A.7), Match Fund activation + public dashboard (§9A.10/§0A.17), profile settings with wallet-address connect (§9.1), trade receipts with plain-language price-impact copy (§9.6), and the terms/disclosures/fees page (§15.3). Remaining deferred items are the real payment-provider adapters (see BACKLOG US-308/US-309) and the §6 product decisions below.
+
 ## 6. Open questions / blockers (from §23)
 
 Tracked here; each blocks the phase noted and needs an owner decision before that phase starts.

@@ -38,7 +38,7 @@ async function recomputeDraftDemand(tx: Prisma.TransactionClient, draftProfileId
   });
 }
 
-export async function placeDemandOrder(userId: string, input: z.infer<typeof placeOrderSchema>) {
+export async function placeDemandOrder(userId: string, input: z.input<typeof placeOrderSchema>) {
   const data = placeOrderSchema.parse(input);
 
   const profile = await prisma.draftProfile.findUnique({ where: { id: data.draftProfileId } });

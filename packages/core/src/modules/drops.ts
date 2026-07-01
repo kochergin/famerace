@@ -5,7 +5,9 @@ import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { paymentProvider } from "../payments";
 import { audit } from "../statemachine";
+import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
+import { enforceProhibited } from "./safety";
 
 // Paid Drops (PRD §9.8): one-off paid content with preview, quantity limit
 // and the 85/10/5 creator/platform/scout split (§12.2).
@@ -19,8 +21,9 @@ export const dropSchema = z.object({
   quantityLimit: z.number().int().min(1).max(100_000).optional(),
 });
 
-export async function createDrop(userId: string, input: z.infer<typeof dropSchema>) {
+export async function createDrop(userId: string, input: z.input<typeof dropSchema>) {
   const data = dropSchema.parse(input);
+  enforceProhibited("drop", data.title, data.description, data.previewText);
   return prisma.$transaction(async (tx) => {
     const creator = await tx.creator.findFirst({ where: { userId } });
     if (!creator) throw notFound("Creator profile");
@@ -118,15 +121,13 @@ export async function tip(userId: string, creatorId: string, amountCents: number
       data: { fromUserId: userId, creatorId, amountCents, message: message || null, isPublic, ledgerTxId },
     });
     if (creator.userId) {
-      await tx.notification.create({
-        data: {
+      await notify(tx, {
           userId: creator.userId,
           type: "PAYOUT_UPDATE",
           title: `You received a tip`,
           body: message || undefined,
           link: "/dashboard/earnings",
-        },
-      });
+        });
     }
     return tipRow;
   });

@@ -4,6 +4,7 @@ import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { paymentProvider } from "../payments";
 import { assertTransition, audit, AUCTION_TRANSITIONS, CREATOR_TRANSITIONS, MARKET_TRANSITIONS } from "../statemachine";
+import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
 import { issueGenesisPassInTx } from "./market";
 
@@ -129,15 +130,13 @@ export async function settleAuction(auctionId: string): Promise<void> {
       const backstageOrders = orders.filter((o) => o.intentType === "BACKSTAGE");
       for (const order of backstageOrders) {
         await releaseOrder(tx, order.id, order.paymentAuthRef);
-        await tx.notification.create({
-          data: {
+        await notify(tx, {
             userId: order.userId,
             type: "LAUNCH_STARTING",
             title: `${creator.displayName} is live — Backstage is open`,
             body: "Your Backstage pledge hold was released. Subscribe to unlock the feed.",
             link: `/c/${creator.handle}`,
-          },
-        });
+          });
       }
       // MISSION_PLEDGE orders stay AUTHORIZED — the missions module converts
       // them into escrowed contributions when the mission goes live.
@@ -188,14 +187,12 @@ export async function settleAuction(auctionId: string): Promise<void> {
           create: { userId, creatorId: creator.id, source: "BACKED" },
           update: { source: "BACKED" },
         });
-        await tx.notification.create({
-          data: {
+        await notify(tx, {
             userId,
             type: "AUCTION_CONFIRMATION",
             title: `${creator.displayName} launched — your opening order filled`,
             link: `/c/${creator.handle}`,
-          },
-        });
+          });
       }
 
       await audit(tx, {

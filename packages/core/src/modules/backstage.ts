@@ -4,7 +4,9 @@ import { config } from "../config";
 import { DomainError, notFound } from "../errors";
 import { paymentProvider } from "../payments";
 import { audit } from "../statemachine";
+import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
+import { enforceProhibited } from "./safety";
 
 // Backstage (PRD §9.7): direct-to-fan recurring revenue. Tiers can be paid,
 // holder-gated (units requirement) or free. Posts lock behind membership.
@@ -17,7 +19,7 @@ export const tierSchema = z.object({
   benefits: z.array(z.string().min(2).max(120)).max(6).default([]),
 });
 
-export async function configureTier(userId: string, input: z.infer<typeof tierSchema>) {
+export async function configureTier(userId: string, input: z.input<typeof tierSchema>) {
   const data = tierSchema.parse(input);
   const creator = await prisma.creator.findFirst({ where: { userId } });
   if (!creator) throw notFound("Creator profile");
@@ -122,8 +124,9 @@ export const postSchema = z.object({
   visibility: z.enum(["PUBLIC_PREVIEW", "MEMBERS", "HOLDERS"]).default("MEMBERS"),
 });
 
-export async function createPost(userId: string, input: z.infer<typeof postSchema>) {
+export async function createPost(userId: string, input: z.input<typeof postSchema>) {
   const data = postSchema.parse(input);
+  enforceProhibited("post", data.title, data.body, data.preview);
   return prisma.$transaction(async (tx) => {
     const creator = await tx.creator.findFirst({ where: { userId } });
     if (!creator) throw notFound("Creator profile");
@@ -141,15 +144,13 @@ export async function createPost(userId: string, input: z.infer<typeof postSchem
       select: { userId: true },
     });
     for (const member of members) {
-      await tx.notification.create({
-        data: {
+      await notify(tx, {
           userId: member.userId,
           type: "BACKSTAGE_POST",
           title: `New Backstage post from ${creator.displayName}`,
           body: data.title,
           link: `/c/${creator.handle}`,
-        },
-      });
+        });
     }
     return post;
   });

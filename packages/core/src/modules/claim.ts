@@ -4,6 +4,7 @@ import { config } from "../config";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { assertTransition, audit, CREATOR_TRANSITIONS, MARKET_TRANSITIONS } from "../statemachine";
+import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
 
 // Creator Claim Flow (PRD §9.2, §7.1) and Launch Threshold Engine (§9A.4).
@@ -209,15 +210,27 @@ export async function approveVerification(adminId: string, creatorId: string): P
           where: { id: firstScout.id },
           data: { claimResult: "CLAIMED" },
         });
-        await tx.notification.create({
-          data: {
+        // Crew credit (§9A.7): the scout's crew counts the claimed creator.
+        const scoutCrew = await tx.crewMember.findUnique({
+          where: { userId: firstScout.scoutUserId },
+        });
+        if (scoutCrew) {
+          await tx.crewMember.update({
+            where: { id: scoutCrew.id },
+            data: { points: { increment: 25 } },
+          });
+          await tx.crew.update({
+            where: { id: scoutCrew.crewId },
+            data: { creatorsClaimed: { increment: 1 }, score: { increment: 25 } },
+          });
+        }
+        await notify(tx, {
             userId: firstScout.scoutUserId,
             type: "CREATOR_CLAIMED",
             title: `${creator.displayName} claimed their launch`,
             body: `Your scout bounty unlocked. Genesis Scout status is yours forever.`,
             link: `/c/${creator.handle}`,
-          },
-        });
+          });
       }
     }
 

@@ -5,7 +5,9 @@ import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { paymentProvider } from "../payments";
 import { assertTransition, audit, MISSION_TRANSITIONS } from "../statemachine";
+import { notify } from "./notify";
 import { recomputeThresholdInTx } from "./claim";
+import { enforceProhibited } from "./safety";
 import { postLedgerTx } from "./ledger";
 
 // Missions (PRD §4.3, §9.12): fund a concrete career move. Contributions
@@ -23,10 +25,12 @@ export const missionSchema = z.object({
     .default([]),
   proofRequirements: z.string().max(1000).optional().or(z.literal("")),
   refundRule: z.enum(["ALL_OR_NOTHING", "KEEP_WHAT_RAISED"]).default("ALL_OR_NOTHING"),
+  matchEligible: z.boolean().default(false),
 });
 
-export async function createMission(userId: string, input: z.infer<typeof missionSchema>) {
+export async function createMission(userId: string, input: z.input<typeof missionSchema>) {
   const data = missionSchema.parse(input);
+  const flagged = enforceProhibited("mission", data.title, data.useOfFunds, data.proofRequirements);
   return prisma.$transaction(async (tx) => {
     const creator = await tx.creator.findFirst({ where: { userId } });
     if (!creator) throw notFound("Creator profile");
@@ -40,11 +44,17 @@ export async function createMission(userId: string, input: z.infer<typeof missio
         rewardTiers: data.rewardTiers,
         proofRequirements: data.proofRequirements || null,
         refundRule: data.refundRule,
+        matchEligible: data.matchEligible,
         status: "UNDER_REVIEW",
       },
     });
     await tx.moderationItem.create({
-      data: { objectType: "Mission", objectId: mission.id, queue: "MISSION_REVIEW" },
+      data: {
+        objectType: "Mission",
+        objectId: mission.id,
+        queue: "MISSION_REVIEW",
+        notes: flagged ? "Auto-flagged: touches a sensitive-category term (§15.4)" : undefined,
+      },
     });
     await audit(tx, { actorId: userId, action: "MISSION_CREATED", objectType: "Mission", objectId: mission.id });
     await recomputeThresholdInTx(tx, creator.id);
@@ -159,9 +169,25 @@ async function contributeInTx(
     ],
     { kind: "mission_contribution", missionId, matchCents },
   );
+  const isFirstForMission =
+    (await tx.missionContribution.count({ where: { missionId, userId } })) === 0;
   const contribution = await tx.missionContribution.create({
     data: { missionId, userId, amountCents, matchCents, tierLabel: tierLabel ?? null, ledgerTxId },
   });
+  if (isFirstForMission) {
+    // Crew retention loop (§9A.7): members' mission funding scores their crew.
+    const crewMembership = await tx.crewMember.findUnique({ where: { userId } });
+    if (crewMembership) {
+      await tx.crewMember.update({
+        where: { id: crewMembership.id },
+        data: { points: { increment: 10 } },
+      });
+      await tx.crew.update({
+        where: { id: crewMembership.crewId },
+        data: { missionsFunded: { increment: 1 }, score: { increment: 10 } },
+      });
+    }
+  }
   const funded = mission.fundedCents + amountCents + matchCents;
   await tx.mission.update({
     where: { id: missionId },
@@ -199,26 +225,22 @@ async function contributeInTx(
           sourceRef: missionId,
         },
       });
-      await tx.notification.create({
-        data: {
+      await notify(tx, {
           userId: backer.userId,
           type: "MISSION_FUNDED",
           title: `Mission funded: ${mission.title}`,
           body: "You helped make it happen. Permanent proof is on your profile.",
           link: `/c/${mission.creator.handle}`,
-        },
-      });
+        });
     }
     if (mission.creator.userId) {
-      await tx.notification.create({
-        data: {
+      await notify(tx, {
           userId: mission.creator.userId,
           type: "MISSION_FUNDED",
           title: `Your mission "${mission.title}" is fully funded`,
           body: "Start the work to release escrow to your balance.",
           link: "/dashboard/missions",
-        },
-      });
+        });
     }
   }
   return contribution;

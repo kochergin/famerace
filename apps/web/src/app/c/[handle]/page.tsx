@@ -10,6 +10,8 @@ import { CATEGORY_LABELS, money, num, timeAgo, countdown } from "@/lib/format";
 import { currentUser } from "@/lib/session";
 import { BackstageSection, DropsSection, MissionSection, TipBox } from "./monetization";
 import { StreetTeamSection } from "./street-team";
+import { PaidMessageBox, RequestMenuSection } from "./engage";
+import { ReportForm } from "@/components/report";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +20,17 @@ async function backAction(formData: FormData) {
   const handle = String(formData.get("handle"));
   const user = await currentUser();
   if (!user) redirect("/join");
+  let receipt = "";
   await withErrorRedirect(`/c/${handle}`, async () => {
     const marketId = String(formData.get("marketId"));
     const custom = Number(formData.get("customAmount") || 0);
     const tier = Number(formData.get("tier") || 0);
     const spend = custom > 0 ? Math.round(custom * 100) : tier;
-    await marketMod.buy(user.id, marketId, spend);
+    const { quote, chargedCents } = await marketMod.buy(user.id, marketId, spend);
+    receipt = `&units=${quote.units}&paid=${(chargedCents / 100).toFixed(2)}`;
   });
   revalidatePath(`/c/${handle}`);
-  redirect(`/c/${handle}?backed=1`);
+  redirect(`/c/${handle}?backed=1${receipt}`);
 }
 
 async function sellAction(formData: FormData) {
@@ -58,7 +62,17 @@ export default async function CreatorPage({
   searchParams,
 }: {
   params: Promise<{ handle: string }>;
-  searchParams: Promise<{ error?: string; backed?: string; sold?: string; pass?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    backed?: string;
+    units?: string;
+    paid?: string;
+    sold?: string;
+    pass?: string;
+    messaged?: string;
+    requested?: string;
+    reported?: string;
+  }>;
 }) {
   const { handle } = await params;
   const flags = await searchParams;
@@ -92,9 +106,18 @@ export default async function CreatorPage({
 
   return (
     <div className="mx-auto max-w-4xl">
-      {flags.backed ? <Banner tone="lime">You backed {creator.displayName}. Welcome to the rise.</Banner> : null}
+      {flags.backed ? (
+        <Banner tone="lime">
+          You backed {creator.displayName}
+          {flags.units ? ` — ${flags.units} units for $${flags.paid}` : ""}. Welcome to the rise. The
+          curve moves up as more people back, so early units cost less.
+        </Banner>
+      ) : null}
       {flags.sold ? <Banner tone="chrome">Sold back to the curve. Your backer rank stays yours.</Banner> : null}
       {flags.pass ? <Banner tone="gold">Genesis Pass secured — you are on the wall forever.</Banner> : null}
+      {flags.messaged ? <Banner tone="chrome">Paid message sent — respond-to-earn, decline-to-refund.</Banner> : null}
+      {flags.requested ? <Banner tone="gold">Request placed. Funds sit in escrow until delivery.</Banner> : null}
+      {flags.reported ? <Banner tone="chrome">Report received. Trust &amp; safety will review it.</Banner> : null}
       <FormError error={flags.error} />
 
       {/* Hero (PRD §0B.7: a stage, not just a chart) */}
@@ -273,6 +296,8 @@ export default async function CreatorPage({
           <BackstageSection creatorId={creator.id} handle={handle} displayName={creator.displayName} />
           <DropsSection creatorId={creator.id} handle={handle} />
           <StreetTeamSection creatorId={creator.id} handle={handle} />
+          <RequestMenuSection creatorId={creator.id} handle={handle} />
+          <PaidMessageBox creatorId={creator.id} handle={handle} displayName={creator.displayName} signedIn={Boolean(user)} />
           <TipBox creatorId={creator.id} handle={handle} signedIn={Boolean(user)} />
         </>
       ) : null}
@@ -324,6 +349,9 @@ export default async function CreatorPage({
           </section>
         </div>
       ) : null}
+      <p className="mt-8 text-center text-xs text-muted">
+        Something wrong here? <ReportForm objectType="Creator" objectId={creator.id} backTo={`/c/${handle}`} />
+      </p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { copy } from "@famerace/core";
+import { copy, notify } from "@famerace/core";
 import { currentUser } from "@/lib/session";
 import "./globals.css";
 
@@ -17,11 +17,13 @@ const NAV = [
   { href: "/roster", label: "Roster" },
   { href: "/scouts", label: "Scouts" },
   { href: "/crews", label: "Crews" },
+  { href: "/famerace-100", label: "100" },
 ] as const;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   const isAdmin = user?.roles.some((r) => r === "ADMIN" || r === "MODERATOR");
+  const unread = user ? await notify.unreadCount(user.id) : 0;
 
   return (
     <html lang="en">
@@ -51,6 +53,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                       Dashboard
                     </Link>
                   ) : null}
+                  <Link href="/notifications" className="relative font-semibold text-muted hover:text-chalk" title="Notifications">
+                    ◉
+                    {unread > 0 ? (
+                      <span className="stat absolute -right-2.5 -top-1.5 rounded-full bg-pink px-1 text-[10px] font-bold text-ink">
+                        {unread > 9 ? "9+" : unread}
+                      </span>
+                    ) : null}
+                  </Link>
                   <Link href={`/u/${user.username}`} className="font-semibold text-chalk hover:text-lime">
                     @{user.username}
                   </Link>
@@ -82,6 +92,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="mt-16 border-t border-edge py-8 text-center text-xs text-muted">
           <p className="display text-lg text-chrome">{copy.tagline}</p>
           <p className="mt-2 mx-auto max-w-lg">{copy.footerLegal}</p>
+          <p className="mt-2">
+            <Link href="/terms" className="underline hover:text-chalk">
+              Terms, disclosures &amp; fees
+            </Link>
+          </p>
         </footer>
       </body>
     </html>

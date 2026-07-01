@@ -33,6 +33,7 @@ async function createMissionAction(formData: FormData) {
       rewardTiers: tiers,
       refundRule: String(formData.get("refundRule") ?? "ALL_OR_NOTHING") as never,
       proofRequirements: String(formData.get("proofRequirements") ?? ""),
+      matchEligible: formData.get("matchEligible") === "on",
     });
   });
   revalidatePath(BACK);
@@ -105,6 +106,10 @@ export default async function DashboardMissionsPage({
           className={inputClass}
         />
         <textarea name="proofRequirements" placeholder="Proof you'll post (video link, receipts…)" rows={2} className={inputClass} />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <input type="checkbox" name="matchEligible" defaultChecked className="accent-gold" />
+          Apply for FameRace Match (season fund tops up eligible contributions)
+        </label>
         <select name="refundRule" className={inputClass} defaultValue="ALL_OR_NOTHING">
           <option value="ALL_OR_NOTHING">All-or-nothing — full refund if the goal is missed</option>
           <option value="KEEP_WHAT_RAISED">Keep what's raised at the deadline</option>

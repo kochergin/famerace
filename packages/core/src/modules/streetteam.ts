@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
 import { audit } from "../statemachine";
+import { notify } from "./notify";
 
 // Street Team quests (PRD §4.4, §9.13) and Backer Crews (§9A.7/§0A.16).
 // Quests: creator posts an action → fans submit proof → approval grants
@@ -31,7 +32,7 @@ export const questSchema = z.object({
   maxCompletions: z.number().int().min(1).max(10_000).optional(),
 });
 
-export async function createQuest(userId: string, input: z.infer<typeof questSchema>) {
+export async function createQuest(userId: string, input: z.input<typeof questSchema>) {
   const data = questSchema.parse(input);
   const creator = await prisma.creator.findFirst({ where: { userId } });
   if (!creator) throw notFound("Creator profile");
@@ -116,15 +117,13 @@ export async function reviewCompletion(
           data: { score: { increment: quest.rewardAmount }, questsCompleted: { increment: 1 } },
         });
       }
-      await tx.notification.create({
-        data: {
+      await notify(tx, {
           userId: completion.userId,
           type: "QUEST_APPROVED",
           title: `Quest approved: ${quest.title}`,
           body: `+${quest.rewardAmount} ${quest.rewardType.toLowerCase().replaceAll("_", " ")}`,
           link: `/c/${quest.creator.handle}`,
-        },
-      });
+        });
       await emitEvent(tx, {
         type: "QUEST_COMPLETED",
         actorId: completion.userId,
@@ -153,7 +152,7 @@ export const crewSchema = z.object({
   description: z.string().max(300).optional().or(z.literal("")),
 });
 
-export async function createCrew(userId: string, input: z.infer<typeof crewSchema>) {
+export async function createCrew(userId: string, input: z.input<typeof crewSchema>) {
   const data = crewSchema.parse(input);
   return prisma.$transaction(async (tx) => {
     const existing = await tx.crewMember.findUnique({ where: { userId } });
