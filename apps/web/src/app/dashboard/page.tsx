@@ -23,6 +23,7 @@ async function verifyAction(formData: FormData) {
       bio: String(formData.get("bio") ?? ""),
       story: String(formData.get("story") ?? ""),
       socialLinks: links,
+      followerCount: Math.max(0, Math.round(Number(formData.get("followerCount") || 0))),
       termsAccepted: formData.get("termsAccepted") === "on" ? true : (false as never),
     });
   });
@@ -185,6 +186,13 @@ export default async function DashboardPage({
               placeholder={"Social profile links, one per line\nhttps://tiktok.com/@you"}
               required
               rows={3}
+              className={inputClass}
+            />
+            <input
+              name="followerCount"
+              type="number"
+              min={0}
+              placeholder="Total followers across platforms (we check it against your links)"
               className={inputClass}
             />
             <label className="flex items-start gap-2 text-xs text-muted">

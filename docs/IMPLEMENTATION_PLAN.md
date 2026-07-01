@@ -127,6 +127,12 @@ Per §5.5: unauthorized celebrity tokens, open token factory, full prediction ma
 
 A full PRD audit after the six build phases found and closed 12 gaps: paid messages / backer inbox (§9.10), creator request menu (§9.11), launch kit generator with built-in disclosures (§9.18/§0A.11), notifications UI + mute setting (§9.19/§9.1), FameRace 100 rankings (§4.6), user-facing reporting & blocking (§15.9), the prohibited-content blocklist wired into nominations/missions/posts/drops/messages (§15.4), crew mission/claim counters (§9A.7), Match Fund activation + public dashboard (§9A.10/§0A.17), profile settings with wallet-address connect (§9.1), trade receipts with plain-language price-impact copy (§9.6), and the terms/disclosures/fees page (§15.3). Remaining deferred items are the real payment-provider adapters (see BACKLOG US-308/US-309) and the §6 product decisions below.
 
+## 5B. V2 "Explosion" polish
+
+A second audit against §0A/§0B/§4.6/§13A (the explosion system is V1 scope per §0A.19) closed eight more items: market graduation with tiered thresholds (GENESIS_CURVE → GRADUATION on trade, → MATURE via sweep, §9.6/§0A.7.5), the staggered-launch day cap enforced in scheduleLaunch (§0A.7.2), DRAFT_RANK_CHANGED riser events from a sweep-driven rank snapshot (§0A.9), self-reported + admin-verified follower counts displayed on cards/hero/rankings (§0B.6 stand-in for §16.5 ingestion), PNG share cards via resvg + og:image/Twitter-card metadata + share rows on draft/creator/mission/profile pages ("design the screenshot", §0B.1), FameRace 100 sub-rankings (most backed / fastest growth / top missions, §4.6) with one-click battle cards, and BigInt cumulative volume counters (§12.5 scale scenarios exceed 32-bit cents).
+
+Still open beyond code: real social-metrics ingestion, email/push rails (weekly recaps), media uploads, LP/maker rewards (PRD V1.2), mobile app — plus the §6 decisions below.
+
 ## 6. Open questions / blockers (from §23)
 
 Tracked here; each blocks the phase noted and needs an owner decision before that phase starts.

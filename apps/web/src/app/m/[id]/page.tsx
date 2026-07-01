@@ -3,8 +3,22 @@ import { notFound } from "next/navigation";
 import { missions as missionsMod, DomainError } from "@famerace/core";
 import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { money, num, timeAgo } from "@/lib/format";
+import { ShareRow } from "@/components/share";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const mission = await missionsMod.missionDetail(id).catch(() => null);
+  if (!mission) return {};
+  const image = `/card/mission/${id}/png`;
+  return {
+    title: `${mission.title} — ${mission.creator.displayName} on FameRace`,
+    description: mission.useOfFunds,
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: [image] },
+  };
+}
 
 export default async function MissionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +44,13 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
       <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
         <h1 className="display text-5xl">{mission.title}</h1>
         <StatusChip status={mission.status} />
+      </div>
+      <div className="mt-3">
+        <ShareRow
+          text={`${mission.creator.displayName}'s mission "${mission.title}" is ${pct}% funded on FameRace. Back the rise.`}
+          path={`/m/${mission.id}`}
+          cardPath={`/card/mission/${mission.id}/png`}
+        />
       </div>
 
       <div className="card mt-6 p-6">

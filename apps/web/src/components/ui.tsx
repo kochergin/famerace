@@ -12,6 +12,8 @@ export function StatusChip({ status }: { status: string }) {
     LAUNCHING_SOON: "bg-lime/15 text-lime border border-lime/40",
     LIVE: "bg-lime text-ink",
     TRENDING: "bg-pink/15 text-pink border border-pink/40",
+    GRADUATION: "bg-gold/15 text-gold border border-gold/40",
+    MATURE: "bg-chrome/15 text-chrome border border-chrome/40",
     FUNDED: "bg-gold/15 text-gold border border-gold/40",
     COMPLETED: "bg-gold/15 text-gold border border-gold/40",
     PAUSED: "bg-muted/15 text-muted border border-muted/40",
@@ -22,8 +24,10 @@ export function StatusChip({ status }: { status: string }) {
   return <span className={`chip ${styles[status] ?? "bg-edge text-muted"}`}>{label}</span>;
 }
 
-export function FuelBar({ value, max }: { value: number; max: number }) {
-  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+export function FuelBar({ value, max }: { value: number | bigint; max: number | bigint }) {
+  const v = Number(value);
+  const m = Number(max);
+  const pct = m > 0 ? Math.min(100, Math.round((v / m) * 100)) : 0;
   return (
     <div className="fuel">
       <div style={{ width: `${pct}%` }} />

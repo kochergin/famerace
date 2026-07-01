@@ -12,6 +12,17 @@ import { logoutAction } from "@/app/actions/auth";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const image = `/card/taste_score/${username}/png`;
+  return {
+    title: `@${username} — FameRace`,
+    description: "Find them early. Back their rise. Prove your taste.",
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: [image] },
+  };
+}
+
 async function blockAction(formData: FormData) {
   "use server";
   const username = String(formData.get("username"));

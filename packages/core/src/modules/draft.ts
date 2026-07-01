@@ -280,3 +280,26 @@ export async function moderateDraft(
     }
   });
 }
+
+/**
+ * Draft Rank snapshot (PRD §0A.9 "live Draft Rank changes"): diff the current
+ * board order against the stored ranks and emit riser events. Sweep-driven.
+ */
+export async function snapshotDraftRanks(): Promise<number> {
+  const board = await draftBoard();
+  let changes = 0;
+  for (const row of board) {
+    if (row.lastRank !== null && row.rank < row.lastRank) {
+      await emitEvent(prisma, {
+        type: "DRAFT_RANK_CHANGED",
+        draftProfileId: row.id,
+        message: `${row.nameOrHandle} climbed to #${row.rank} on the Draft`,
+      });
+      changes += 1;
+    }
+    if (row.lastRank !== row.rank) {
+      await prisma.draftProfile.update({ where: { id: row.id }, data: { lastRank: row.rank } });
+    }
+  }
+  return changes;
+}

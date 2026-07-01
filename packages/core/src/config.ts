@@ -30,6 +30,16 @@ export const config = {
   demandOrderTtlDays: 30,
   /** Confirmation window length before opening auction (PRD §0A.4: 24–48h). */
   confirmationWindowHours: 24,
+  /**
+   * Market graduation gates (PRD §9.6 stages, §0A.7.5): GENESIS_CURVE →
+   * GRADUATION at tier 1, GRADUATION → MATURE at tier 2 (sweep-checked).
+   */
+  graduation: {
+    volumeCents: intEnv("GRADUATION_VOLUME_CENTS", 25_000_000), // $250k traded
+    holderCount: intEnv("GRADUATION_HOLDERS", 100),
+    matureVolumeCents: intEnv("MATURE_VOLUME_CENTS", 250_000_000), // $2.5M traded
+    matureHolderCount: intEnv("MATURE_HOLDERS", 1_000),
+  },
   /** Anti-bot: max buys per user per market within the launch window. */
   antiBot: {
     launchWindowMinutes: 30,

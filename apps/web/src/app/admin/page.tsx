@@ -188,6 +188,7 @@ export default async function AdminPage({
                     <span className="font-semibold text-chalk">{creator.displayName}</span>{" "}
                     <span className="text-muted">
                       @{creator.handle} · {creator.draftProfile ? `${creator.draftProfile.fanCount} fans, ${money(creator.draftProfile.pledgedDemandTotal, { compact: true })} pledged` : ""}
+                      {creator.followerCount > 0 ? ` · claims ${num(creator.followerCount)} followers` : " · no follower claim"}
                     </span>
                   </span>
                   <span className="flex gap-2">

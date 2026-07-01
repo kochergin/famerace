@@ -71,6 +71,7 @@ export const verificationSchema = z.object({
   bio: z.string().min(10).max(500),
   story: z.string().min(20).max(3000),
   socialLinks: z.array(z.string().url()).min(1, "Add at least one social link").max(6),
+  followerCount: z.number().int().min(0).max(1_000_000_000).default(0),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the creator terms and disclosures" }),
   }),
@@ -80,7 +81,7 @@ export const verificationSchema = z.object({
 export async function submitVerification(
   userId: string,
   creatorId: string,
-  input: z.infer<typeof verificationSchema>,
+  input: z.input<typeof verificationSchema>,
 ): Promise<Creator> {
   const data = verificationSchema.parse(input);
   return prisma.$transaction(async (tx) => {
@@ -94,6 +95,9 @@ export async function submitVerification(
         bio: data.bio,
         story: data.story,
         socialLinks: data.socialLinks,
+        // Self-reported; the admin eyeballs it against the linked profiles at
+        // verification (V1 stand-in for §16.5 social-metrics ingestion).
+        followerCount: data.followerCount,
         status: "VERIFICATION_PENDING",
         verificationStatus: "PENDING",
         termsAcceptedAt: new Date(),
@@ -404,6 +408,26 @@ export async function recomputeThresholdInTx(tx: Prisma.TransactionClient, creat
 export async function scheduleLaunch(adminId: string, creatorId: string, launchAt: Date) {
   if (launchAt.getTime() <= Date.now()) {
     throw new DomainError("BAD_LAUNCH_TIME", "Launch time must be in the future");
+  }
+  // Staggered launches (PRD §0A.7.2): every launch should be an event —
+  // cap same-day launches so the calendar stays a daily drumbeat.
+  const dayStart = new Date(launchAt);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+  const sameDay = await prisma.openingAuction.count({
+    where: {
+      endTime: { gte: dayStart, lt: dayEnd },
+      status: { in: ["SCHEDULED", "COLLECTING", "SETTLED", "CLEARING"] },
+      market: { creatorId: { not: creatorId } },
+    },
+  });
+  if (sameDay >= config.season.maxLaunchesPerDay) {
+    throw new DomainError(
+      "LAUNCH_DAY_FULL",
+      `That day already has ${sameDay} launches (max ${config.season.maxLaunchesPerDay}) — pick ${new Date(
+        dayEnd,
+      ).toISOString().slice(0, 10)} or later`,
+    );
   }
   return prisma.$transaction(async (tx) => {
     const creator = await tx.creator.findUnique({

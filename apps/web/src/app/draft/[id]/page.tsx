@@ -7,8 +7,22 @@ import { SectionTitle, Stat } from "@/components/ui";
 import { CATEGORY_LABELS, money, num, timeAgo } from "@/lib/format";
 import { currentUser, requireCurrentUser } from "@/lib/session";
 import { PledgePanel } from "./pledge-panel";
+import { ShareRow } from "@/components/share";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const profile = await draft.getDraftProfile(id).catch(() => null);
+  if (!profile) return {};
+  const image = `/card/draft_rank/${id}/png`;
+  return {
+    title: `${profile.nameOrHandle} — FameRace Draft`,
+    description: "The internet is drafting 100 future stars. Back the rise.",
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: [image] },
+  };
+}
 
 async function watchAction(formData: FormData) {
   "use server";
@@ -113,6 +127,14 @@ export default async function DraftProfilePage({
         ) : null}
 
         <p className="mt-4 rounded border border-edge bg-ink/50 p-3 text-xs text-muted">{copy.draftNotice}</p>
+
+        <div className="mt-4">
+          <ShareRow
+            text={`${profile.nameOrHandle} is on the FameRace Draft — ${profile.fanCount} fans waiting. Find them early.`}
+            path={`/draft/${profile.id}`}
+            cardPath={`/card/draft_rank/${profile.id}/png`}
+          />
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <form action={inviteAction}>

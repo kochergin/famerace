@@ -589,6 +589,7 @@ model DraftProfile {
   pledgedDemandTotal Int                @default(0)
   requestedMission   String?
   inviteCount        Int                @default(0)
+  lastRank           Int?
   claimStatus        ClaimStatus        @default(UNCLAIMED)
   takedownStatus     TakedownStatus     @default(NONE)
   moderationStatus   ModerationDecision @default(PENDING)
@@ -751,7 +752,7 @@ model CreatorMarket {
   priceCents       Int          @default(100)
   supplyUnits      Int          @default(0)
   holderCount      Int          @default(0)
-  volumeTotalCents Int          @default(0)
+  volumeTotalCents BigInt       @default(0)
   creatorFeeBps    Int          @default(35)
   protocolFeeBps   Int          @default(65)
   scoutFeeBps      Int          @default(10)
@@ -917,7 +918,7 @@ model Drop {
   quantityLimit Int?
   soldCount     Int        @default(0)
   status        DropStatus @default(DRAFT)
-  revenueCents  Int        @default(0)
+  revenueCents  BigInt     @default(0)
   createdAt     DateTime   @default(now())
 
   creator   Creator        @relation(fields: [creatorId], references: [id])
@@ -1081,8 +1082,8 @@ model MissionUpdate {
 model MatchFund {
   id           String   @id @default(cuid())
   seasonName   String   @unique
-  totalCents   Int
-  spentCents   Int      @default(0)
+  totalCents   BigInt
+  spentCents   BigInt   @default(0)
   matchRatio   Float    @default(0.25)
   creatorCap   Int      @default(500000)
   active       Boolean  @default(true)

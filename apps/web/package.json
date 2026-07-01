@@ -10,6 +10,7 @@
   "dependencies": {
     "@famerace/core": "*",
     "@famerace/db": "*",
+    "@resvg/resvg-js": "^2.6.2",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

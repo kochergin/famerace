@@ -68,8 +68,10 @@ function renderSvg(content: CardContent): string {
 </svg>`;
 }
 
-const dollars = (cents: number) =>
-  `$${cents >= 100_000 ? `${Math.round(cents / 100_000) / 10}k` : (cents / 100).toLocaleString("en-US")}`;
+const dollars = (raw: number | bigint) => {
+  const cents = Number(raw);
+  return `$${cents >= 100_000 ? `${Math.round(cents / 100_000) / 10}k` : (cents / 100).toLocaleString("en-US")}`;
+};
 
 /**
  * Build a card from live data. `subjectRef` semantics per template:

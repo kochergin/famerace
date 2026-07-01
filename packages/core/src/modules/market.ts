@@ -168,9 +168,25 @@ export async function buy(userId: string, marketId: string, spendCents: number) 
       data: {
         supplyUnits: newSupply,
         priceCents: spotPriceCents(market, newSupply),
-        volumeTotalCents: { increment: chargedCents },
+        volumeTotalCents: { increment: BigInt(chargedCents) },
       },
     });
+    // Graduation gate (PRD §9.6 stages, §0A.7.5): once volume + holders clear
+    // the tier-1 thresholds, the market graduates — a public milestone and the
+    // hook for post-graduation maker rewards.
+    if (
+      updated.status === "GENESIS_CURVE" &&
+      updated.volumeTotalCents >= BigInt(config.graduation.volumeCents) &&
+      updated.holderCount >= config.graduation.holderCount
+    ) {
+      assertTransition("market", MARKET_TRANSITIONS, updated.status, "GRADUATION");
+      await tx.creatorMarket.update({ where: { id: marketId }, data: { status: "GRADUATION" } });
+      await emitEvent(tx, {
+        type: "CREATOR_MILESTONE",
+        creatorId: market.creatorId,
+        message: `$${market.ticker} graduated — ${market.creator.displayName}'s market cleared ${config.graduation.holderCount}+ holders`,
+      });
+    }
     const marketTx = await tx.marketTransaction.create({
       data: {
         creatorMarketId: marketId,
@@ -251,7 +267,7 @@ export async function sell(userId: string, marketId: string, units: number) {
       data: {
         supplyUnits: newSupply,
         priceCents: spotPriceCents(market, newSupply),
-        volumeTotalCents: { increment: quote.grossCents },
+        volumeTotalCents: { increment: BigInt(quote.grossCents) },
       },
     });
     const marketTx = await tx.marketTransaction.create({

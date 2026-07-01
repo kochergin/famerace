@@ -150,7 +150,7 @@ export async function settleAuction(auctionId: string): Promise<void> {
           status: "GENESIS_CURVE",
           supplyUnits: supply,
           priceCents: spotPriceCents(market, supply),
-          volumeTotalCents: { increment: reserveCents },
+          volumeTotalCents: { increment: BigInt(reserveCents) },
           holderCount: new Set(buyOrders.filter((o) => (fillByOrder.get(o.id)?.units ?? 0) > 0).map((o) => o.userId)).size,
           launchTime: new Date(),
         },

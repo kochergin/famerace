@@ -89,7 +89,7 @@ export async function purchaseDrop(userId: string, dropId: string) {
       where: { id: dropId },
       data: {
         soldCount,
-        revenueCents: { increment: fresh.priceCents },
+        revenueCents: { increment: BigInt(fresh.priceCents) },
         status: fresh.quantityLimit && soldCount >= fresh.quantityLimit ? "SOLD_OUT" : "LIVE",
       },
     });

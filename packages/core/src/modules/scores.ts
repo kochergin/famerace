@@ -105,7 +105,7 @@ export async function computeFameScore(creatorId: string): Promise<{ score: numb
     drivers.push({ label: "Mission funding", points: clamp(missionProgress * 12, 25) });
   if (memberCount > 0)
     drivers.push({ label: `${memberCount} Backstage members`, points: clamp(Math.sqrt(memberCount) * 4, 15) });
-  const volume = creator.market?.volumeTotalCents ?? 0;
+  const volume = Number(creator.market?.volumeTotalCents ?? 0n);
   if (volume > 0) drivers.push({ label: "Market activity", points: clamp(Math.log10(volume / 100 + 1) * 4, 15) });
   if (questCompletions > 0)
     drivers.push({ label: "Street Team activity", points: clamp(questCompletions * 2, 10) });

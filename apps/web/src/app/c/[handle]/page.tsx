@@ -12,8 +12,22 @@ import { BackstageSection, DropsSection, MissionSection, TipBox } from "./moneti
 import { StreetTeamSection } from "./street-team";
 import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
+import { ShareRow } from "@/components/share";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = await params;
+  const creator = await prisma.creator.findUnique({ where: { handle }, select: { displayName: true, bio: true } });
+  if (!creator) return {};
+  const image = `/card/breakout/${handle}/png`;
+  return {
+    title: `${creator.displayName} — FameRace`,
+    description: creator.bio ?? "Back the rise.",
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image", images: [image] },
+  };
+}
 
 async function backAction(formData: FormData) {
   "use server";
@@ -154,13 +168,21 @@ export default async function CreatorPage({
         ) : null}
 
         {m ? (
-          <div className="mt-6 grid grid-cols-2 gap-4 border-t border-edge pt-4 sm:grid-cols-4">
+          <div className={`mt-6 grid grid-cols-2 gap-4 border-t border-edge pt-4 ${creator.followerCount > 0 ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
             <Stat label="Price" value={money(m.priceCents)} accent="text-lime" />
             <Stat label="Holders" value={num(m.holderCount)} />
             <Stat label="Supply" value={num(m.supplyUnits)} />
             <Stat label="Volume" value={money(m.volumeTotalCents, { compact: true })} />
+            {creator.followerCount > 0 ? <Stat label="Followers" value={num(creator.followerCount)} accent="text-pink" /> : null}
           </div>
         ) : null}
+        <div className="mt-4 border-t border-edge pt-4">
+          <ShareRow
+            text={`Back the rise: ${creator.displayName} is live on FameRace.`}
+            path={`/c/${handle}`}
+            cardPath={`/card/breakout/${handle}/png`}
+          />
+        </div>
       </div>
 
       {creator.story ? (

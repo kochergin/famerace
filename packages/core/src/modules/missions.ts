@@ -146,14 +146,14 @@ async function contributeInTx(
     const fund = await tx.matchFund.findFirst({ where: { active: true } });
     if (fund) {
       const room = Math.min(
-        fund.totalCents - fund.spentCents,
+        Number(fund.totalCents - fund.spentCents),
         Math.max(0, (mission.matchCapCents || fund.creatorCap) - mission.matchCents),
       );
       matchCents = Math.min(Math.floor(amountCents * fund.matchRatio), room);
       if (matchCents > 0) {
         await tx.matchFund.update({
           where: { id: fund.id },
-          data: { spentCents: { increment: matchCents } },
+          data: { spentCents: { increment: BigInt(matchCents) } },
         });
       }
     }
@@ -356,7 +356,7 @@ export async function expireMissions(now = new Date()): Promise<number> {
       if (matchReturned > 0) {
         await tx.matchFund.updateMany({
           where: { active: true },
-          data: { spentCents: { decrement: matchReturned } },
+          data: { spentCents: { decrement: BigInt(matchReturned) } },
         });
       }
       await tx.mission.update({ where: { id }, data: { status: "EXPIRED", fundedCents: 0, matchCents: 0 } });

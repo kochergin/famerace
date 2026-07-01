@@ -1,5 +1,5 @@
-export function money(cents: number, opts: { compact?: boolean } = {}): string {
-  const dollars = cents / 100;
+export function money(cents: number | bigint, opts: { compact?: boolean } = {}): string {
+  const dollars = Number(cents) / 100;
   if (opts.compact && Math.abs(dollars) >= 1000) {
     return `$${Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(dollars)}`;
   }
@@ -10,7 +10,8 @@ export function money(cents: number, opts: { compact?: boolean } = {}): string {
   }).format(dollars);
 }
 
-export function num(n: number): string {
+export function num(raw: number | bigint): string {
+  const n = Number(raw);
   return Intl.NumberFormat("en-US", { notation: n >= 10_000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n);
 }
 

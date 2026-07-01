@@ -31,6 +31,9 @@ export default async function LivePage() {
                 <StatusChip status={creator.market?.status === "PAUSED" ? "PAUSED" : "LIVE"} />
               </div>
               <h3 className="display mt-2 text-3xl">{creator.displayName}</h3>
+              {creator.followerCount > 0 ? (
+                <p className="stat mt-0.5 text-xs text-pink">{num(creator.followerCount)} followers</p>
+              ) : null}
               {creator.bio ? <p className="mt-1 line-clamp-2 text-sm text-muted">{creator.bio}</p> : null}
               {creator.market ? (
                 <div className="mt-4 grid grid-cols-3 gap-2 border-t border-edge pt-3">

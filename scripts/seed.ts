@@ -130,6 +130,7 @@ async function main() {
     story:
       "I've been writing songs in my bedroom for three years. Last month one of them went places I never expected, and suddenly there were thousands of you. FameRace is where we make the next move together: fund the first real music video, get backstage demos before anyone, and prove you were here first.",
     socialLinks: ["https://tiktok.com/@mira", "https://instagram.com/mira.music"],
+    followerCount: 18_200,
     termsAccepted: true,
   });
   await claim.approveVerification(admin.id, mira.id);
@@ -237,6 +238,7 @@ async function main() {
     story:
       "Fifty-two weeks, fifty-two launches. The next one is the big one — a public beta with room for ten thousand users, and my backers run the launch war-room.",
     socialLinks: ["https://x.com/kai"],
+    followerCount: 42_000,
     termsAccepted: true,
   });
   await claim.approveVerification(admin.id, kai.id);

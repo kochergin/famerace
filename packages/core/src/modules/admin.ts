@@ -1,9 +1,12 @@
 import { prisma, type ModerationQueue, type ReportReason } from "@famerace/db";
+import { config } from "../config";
+import { emitEvent } from "../events";
 import { DomainError, notFound } from "../errors";
 import { assertTransition, audit, CREATOR_TRANSITIONS } from "../statemachine";
 import * as auctionMod from "./auction";
 import * as backstageMod from "./backstage";
 import * as demandMod from "./demand";
+import * as draftMod from "./draft";
 import * as missionsMod from "./missions";
 import * as scoresMod from "./scores";
 import * as streetteamMod from "./streetteam";
@@ -242,9 +245,32 @@ export async function recentAuditLog(limit = 50) {
   return prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: limit });
 }
 
+/** GRADUATION → MATURE once the tier-2 thresholds clear (PRD §9.6 stages). */
+export async function matureGraduatedMarkets(): Promise<number> {
+  const graduated = await prisma.creatorMarket.findMany({
+    where: {
+      status: "GRADUATION",
+      volumeTotalCents: { gte: BigInt(config.graduation.matureVolumeCents) },
+      holderCount: { gte: config.graduation.matureHolderCount },
+    },
+    include: { creator: { select: { displayName: true } } },
+  });
+  for (const market of graduated) {
+    await prisma.$transaction(async (tx) => {
+      await tx.creatorMarket.update({ where: { id: market.id }, data: { status: "MATURE" } });
+      await emitEvent(tx, {
+        type: "CREATOR_MILESTONE",
+        creatorId: market.creatorId,
+        message: `$${market.ticker} is now a mature market — ${market.creator.displayName} joined the big board`,
+      });
+    });
+  }
+  return graduated.length;
+}
+
 /** All periodic jobs in one sweep — the admin button and the cron entrypoint. */
 export async function runSweeps() {
-  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash] =
+  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured] =
     await Promise.all([
       auctionMod.settleDueLaunches(),
       demandMod.expireStaleOrders(),
@@ -254,6 +280,8 @@ export async function runSweeps() {
       scoresMod.computeAllTasteScores(),
       scoresMod.computeAllFameScores(),
       detectWashTrading(),
+      draftMod.snapshotDraftRanks(),
+      matureGraduatedMarkets(),
     ]);
-  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash };
+  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured };
 }

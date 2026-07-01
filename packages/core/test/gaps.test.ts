@@ -212,7 +212,7 @@ describe("match fund (§9A.10)", () => {
     expect(funded.matchCents).toBe(2_500); // 25% of $100
     expect(funded.fundedCents).toBe(12_500);
     const fund = await prisma.matchFund.findFirstOrThrow();
-    expect(fund.spentCents).toBe(2_500);
+    expect(fund.spentCents).toBe(2_500n);
     expect(await balance({ account: "MISSION_ESCROW", missionId: mission.id })).toBe(12_500);
     await assertLedgerBalanced();
   });
