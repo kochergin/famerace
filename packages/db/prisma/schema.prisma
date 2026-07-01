@@ -204,6 +204,7 @@ enum LedgerAccount {
   CREATOR_EARNED
   CREATOR_PENDING
   MISSION_ESCROW
+  MARKET_RESERVE
   PLATFORM_FEES
   SCOUT_REWARDS
   MATCH_FUND
@@ -481,6 +482,7 @@ model User {
   shareCards       ShareCard[]
   notifications    Notification[]
   auctionOrders    AuctionOrder[]
+  genesisPasses    GenesisPass[]
   reportsFiled     Report[]          @relation("Reporter")
   blocksMade       UserBlock[]       @relation("Blocker")
   blocksReceived   UserBlock[]       @relation("Blocked")
@@ -564,6 +566,7 @@ model Creator {
   payouts         Payout[]
   fameScores      FameScore[]
   demandOrders    FanDemandOrder[]
+  genesisPasses   GenesisPass[]
 
   @@index([status, category])
 }
@@ -778,6 +781,27 @@ model Holding {
 
   @@unique([userId, creatorMarketId])
   @@index([creatorMarketId, backerRank])
+}
+
+// Genesis Pass (PRD §9.5, §12.2 "primary sale"): a one-time access/status
+// purchase with the 80/12/8 creator/platform/scout split. Distinct from curve
+// units so the market reserve stays fully backed — pass revenue goes to the
+// creator, curve deposits stay in MARKET_RESERVE.
+model GenesisPass {
+  id           String   @id @default(cuid())
+  userId       String
+  creatorId    String
+  tierCents    Int
+  backerNumber Int
+  ledgerTxId   String?
+  createdAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  creator Creator @relation(fields: [creatorId], references: [id])
+
+  @@unique([creatorId, backerNumber])
+  @@unique([userId, creatorId])
+  @@index([creatorId, backerNumber])
 }
 
 model MarketTransaction {

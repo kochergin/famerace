@@ -3,7 +3,7 @@ import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
-import { assertTransition, audit, CREATOR_TRANSITIONS } from "../statemachine";
+import { assertTransition, audit, CREATOR_TRANSITIONS, MARKET_TRANSITIONS } from "../statemachine";
 import { postLedgerTx } from "./ledger";
 
 // Creator Claim Flow (PRD §9.2, §7.1) and Launch Threshold Engine (§9A.4).
@@ -410,6 +410,11 @@ export async function scheduleLaunch(adminId: string, creatorId: string, launchA
     await tx.launchThreshold.update({
       where: { creatorId },
       data: { status: "LAUNCHING_SOON" },
+    });
+    assertTransition("market", MARKET_TRANSITIONS, creator.market.status, "OPENING_AUCTION");
+    await tx.creatorMarket.update({
+      where: { id: creator.market.id },
+      data: { status: "OPENING_AUCTION" },
     });
     await tx.openingAuction.upsert({
       where: { creatorMarketId: creator.market.id },
