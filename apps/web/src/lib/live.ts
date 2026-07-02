@@ -33,3 +33,16 @@ export function roomJoin(listener: RoomListener): () => void {
 export function roomWatchers(): number {
   return room.watchers;
 }
+
+// Reaction flood guard: a simple process-wide token bucket. Reactions are
+// fan-out-to-everyone, so an abuser spamming the action would melt every
+// open stream — drop excess silently instead.
+const bucket = { tokens: 20, last: Date.now() };
+export function allowReaction(): boolean {
+  const now = Date.now();
+  bucket.tokens = Math.min(20, bucket.tokens + ((now - bucket.last) / 1000) * 10);
+  bucket.last = now;
+  if (bucket.tokens < 1) return false;
+  bucket.tokens -= 1;
+  return true;
+}

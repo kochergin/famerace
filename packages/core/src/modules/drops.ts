@@ -8,6 +8,7 @@ import { audit } from "../statemachine";
 import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
 import { enforceProhibited } from "./safety";
+import { moneyTx } from "../tx";
 
 // Paid Drops (PRD §9.8): one-off paid content with preview, quantity limit
 // and the 85/10/5 creator/platform/scout split (§12.2).
@@ -57,7 +58,7 @@ export async function purchaseDrop(userId: string, dropId: string) {
   const auth = await paymentProvider.authorize({ userId, amountCents: drop.priceCents, purpose: "drop" });
   await paymentProvider.capture(auth.authRef);
 
-  return prisma.$transaction(async (tx) => {
+  return moneyTx(async (tx) => {
     const fresh = await tx.drop.findUniqueOrThrow({ where: { id: dropId } });
     if (fresh.status !== "LIVE") throw new DomainError("DROP_CLOSED", "This drop is no longer available");
     if (fresh.quantityLimit && fresh.soldCount >= fresh.quantityLimit) {
@@ -103,7 +104,7 @@ export async function tip(userId: string, creatorId: string, amountCents: number
   }
   const auth = await paymentProvider.authorize({ userId, amountCents, purpose: "tip" });
   await paymentProvider.capture(auth.authRef);
-  return prisma.$transaction(async (tx) => {
+  return moneyTx(async (tx) => {
     const creator = await tx.creator.findUnique({ where: { id: creatorId } });
     if (!creator || creator.status !== "LIVE") throw notFound("Creator");
     const creatorCents = Math.floor((amountCents * config.tips.creatorBps) / 10_000);

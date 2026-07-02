@@ -70,16 +70,35 @@ export async function signup(input: z.infer<typeof signupSchema>): Promise<{ use
   return { user, token };
 }
 
+// Brute-force throttle: per-identifier failure counter with a lockout window.
+// In-process (per instance) — swap for a Redis counter in multi-process prod.
+const LOGIN_MAX_FAILURES = 5;
+const LOGIN_LOCK_MS = 60_000;
+const loginFailures = new Map<string, { count: number; lockedUntil: number }>();
+
 export async function login(identifier: string, password: string): Promise<{ user: User; token: string }> {
+  const key = identifier.toLowerCase();
+  const gate = loginFailures.get(key);
+  if (gate && gate.lockedUntil > Date.now()) {
+    throw new DomainError("RATE_LIMITED", "Too many attempts — try again in a minute", 429);
+  }
+
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: identifier.toLowerCase() }, { username: identifier.toLowerCase() }],
+      OR: [{ email: key }, { username: key }],
       status: "ACTIVE",
     },
   });
   if (!user?.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
+    const next = { count: (gate?.count ?? 0) + 1, lockedUntil: 0 };
+    if (next.count >= LOGIN_MAX_FAILURES) {
+      next.count = 0;
+      next.lockedUntil = Date.now() + LOGIN_LOCK_MS;
+    }
+    loginFailures.set(key, next);
     throw new DomainError("BAD_CREDENTIALS", "Wrong username or password", 401);
   }
+  loginFailures.delete(key);
   const token = await createSession(user.id);
   return { user, token };
 }

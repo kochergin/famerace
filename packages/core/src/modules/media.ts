@@ -68,6 +68,60 @@ export async function getAsset(id: string) {
 }
 
 /**
+ * Can this viewer see the SHARP asset? Avatars are public; POST/DROP media is
+ * the paywalled product — CSS blur is not access control, this is. (The
+ * blurred /img/:id/blur variant stays public: it IS the tease.)
+ */
+export async function canViewSharp(
+  asset: { id: string; kind: string; ownerUserId: string },
+  viewerUserId: string | null,
+): Promise<boolean> {
+  if (asset.kind === "AVATAR") return true;
+  if (viewerUserId === asset.ownerUserId) return true;
+  const url = `/img/${asset.id}`;
+
+  if (asset.kind === "POST") {
+    const post = await prisma.backstagePost.findFirst({
+      where: { mediaUrl: url },
+      include: { creator: { select: { id: true, userId: true } } },
+    });
+    if (!post) return false; // orphaned upload: only the owner (handled above)
+    if (post.visibility === "PUBLIC_PREVIEW") return true;
+    if (!viewerUserId) return false;
+    if (post.creator.userId === viewerUserId) return true;
+    const membership = await prisma.backstageMembership.findUnique({
+      where: { userId_creatorId: { userId: viewerUserId, creatorId: post.creatorId } },
+    });
+    const isMember =
+      membership != null &&
+      (membership.status === "ACTIVE" || (membership.status === "CANCELED" && membership.renewsAt > new Date()));
+    if (post.visibility === "MEMBERS" && isMember) return true;
+    const market = await prisma.creatorMarket.findUnique({ where: { creatorId: post.creatorId } });
+    if (!market) return false;
+    const holding = await prisma.holding.findUnique({
+      where: { userId_creatorMarketId: { userId: viewerUserId, creatorMarketId: market.id } },
+    });
+    return (holding?.amountUnits ?? 0) > 0;
+  }
+
+  if (asset.kind === "DROP") {
+    const drop = await prisma.drop.findFirst({
+      where: { mediaUrl: url },
+      include: { creator: { select: { userId: true } } },
+    });
+    if (!drop) return false;
+    if (drop.creator.userId === viewerUserId) return true;
+    if (!viewerUserId) return false;
+    const purchase = await prisma.dropPurchase.findUnique({
+      where: { dropId_userId: { dropId: drop.id, userId: viewerUserId } },
+    });
+    return purchase !== null;
+  }
+
+  return false;
+}
+
+/**
  * Store a content image (backstage post / drop media) and return its URL.
  * Same validation as avatars; ownership stays with the uploading user.
  */

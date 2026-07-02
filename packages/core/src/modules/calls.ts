@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DomainError, notFound } from "../errors";
 import { publish } from "../bus";
 import { notify } from "./notify";
+import { moneyTx } from "../tx";
 
 /**
  * Calls (prediction layer): time-boxed public predictions on creators,
@@ -65,7 +66,7 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
   if (!Number.isInteger(points) || points <= 0) {
     throw new DomainError("BAD_STAKE", "Stake a whole number of Taste Points");
   }
-  return prisma.$transaction(async (tx) => {
+  return moneyTx(async (tx) => {
     const call = await tx.call.findUnique({ where: { id: callId }, include: { creator: { select: { displayName: true } } } });
     if (!call) throw notFound("Call");
     if (call.status !== "OPEN") throw new DomainError("CALL_CLOSED", "This call has already resolved");
@@ -73,10 +74,16 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
     const existing = await tx.callStake.findUnique({ where: { callId_userId: { callId, userId } } });
     if (existing) throw new DomainError("ALREADY_STAKED", "One position per call — you are already in");
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { points: true, username: true } });
-    if (user.points < points) {
+    // Conditional debit: the WHERE clause makes overdraw impossible even if
+    // two stakes race past the read above (defense in depth on top of the
+    // serializable transaction).
+    const debit = await tx.user.updateMany({
+      where: { id: userId, points: { gte: points } },
+      data: { points: { decrement: points } },
+    });
+    if (debit.count === 0) {
       throw new DomainError("NOT_ENOUGH_POINTS", `You have ${user.points} Taste Points — earn more by backing, funding and quests`);
     }
-    await tx.user.update({ where: { id: userId }, data: { points: { decrement: points } } });
     const stakeRow = await tx.callStake.create({ data: { callId, userId, side, points } });
     const shareBefore = yesShare(call);
     const updated = await tx.call.update({

@@ -174,7 +174,7 @@ export default async function CreatorPage({
 
   return (
     <div className="mx-auto max-w-4xl">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {flags.backed || flags.pass ? <Confetti fireKey={flags.backed ? "backed" : "pass"} /> : null}
       {/* Receipt interstitial: the proof-of-early moment IS the share moment */}
       {flags.backed ? (

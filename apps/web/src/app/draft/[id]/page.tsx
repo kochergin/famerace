@@ -92,7 +92,7 @@ export default async function DraftProfilePage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {isPending ? (
         <p className="mb-4 rounded border border-chrome/30 bg-chrome/5 px-3 py-2 text-sm text-chrome">
           This nomination is awaiting moderation review — it is not on the public board yet.

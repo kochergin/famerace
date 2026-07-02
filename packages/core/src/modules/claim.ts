@@ -70,7 +70,10 @@ export async function startClaim(userId: string, draftProfileId: string): Promis
 export const verificationSchema = z.object({
   bio: z.string().min(10).max(500),
   story: z.string().min(20).max(3000),
-  socialLinks: z.array(z.string().url()).min(1, "Add at least one social link").max(6),
+  socialLinks: z
+    .array(z.string().url().refine((u) => /^https?:\/\//i.test(u), "Links must start with http(s)://"))
+    .min(1, "Add at least one social link")
+    .max(6),
   followerCount: z.number().int().min(0).max(1_000_000_000).default(0),
   termsAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the creator terms and disclosures" }),

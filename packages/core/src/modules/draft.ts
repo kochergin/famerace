@@ -10,7 +10,13 @@ import { enforceProhibited } from "./safety";
 
 export const nominateSchema = z.object({
   nameOrHandle: z.string().min(2).max(60),
-  externalLink: z.string().url().max(300).optional().or(z.literal("")),
+  externalLink: z
+    .string()
+    .url()
+    .max(300)
+    .refine((u) => /^https?:\/\//i.test(u), "Link must start with http(s)://")
+    .optional()
+    .or(z.literal("")),
   category: z.enum(["MUSICIAN", "INTERNET_CREATOR", "BUILDER_FOUNDER", "ARTIST_DESIGNER"]),
   thesis: z.string().min(20, "Tell us why they are rising (20+ characters)").max(2000),
   requestedMission: z.string().max(200).optional().or(z.literal("")),

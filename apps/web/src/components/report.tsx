@@ -5,7 +5,9 @@ import { requireCurrentUser } from "@/lib/session";
 
 async function reportAction(formData: FormData) {
   "use server";
-  const backTo = String(formData.get("backTo"));
+  const raw = String(formData.get("backTo"));
+  // Same-site paths only — a crafted backTo must never redirect off-site.
+  const backTo = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
   const user = await requireCurrentUser().catch(() => null);
   if (!user) redirect("/join");
   await withErrorRedirect(backTo, async () => {

@@ -6,6 +6,7 @@ import { emitEvent } from "../events";
 import { paymentProvider } from "../payments";
 import { assertTransition, audit, MARKET_TRANSITIONS } from "../statemachine";
 import { postLedgerTx } from "./ledger";
+import { moneyTx } from "../tx";
 
 // Bonding-curve market (PRD §9.6). Money paths:
 //   buy:  user pays gross → fees split off → net enters MARKET_RESERVE
@@ -105,7 +106,7 @@ export async function buy(userId: string, marketId: string, spendCents: number) 
   if (!Number.isInteger(spendCents) || spendCents < 100) {
     throw new DomainError("BAD_AMOUNT", "Minimum back is $1");
   }
-  return prisma.$transaction(async (tx) => {
+  return moneyTx(async (tx) => {
     const market = await tx.creatorMarket.findUnique({
       where: { id: marketId },
       include: { creator: true },
@@ -219,7 +220,7 @@ export async function buy(userId: string, marketId: string, spendCents: number) 
 
 export async function sell(userId: string, marketId: string, units: number) {
   if (!Number.isInteger(units) || units <= 0) throw new DomainError("BAD_AMOUNT", "Units must be positive");
-  return prisma.$transaction(async (tx) => {
+  return moneyTx(async (tx) => {
     const market = await tx.creatorMarket.findUnique({
       where: { id: marketId },
       include: { creator: true },
@@ -303,7 +304,7 @@ export async function purchaseGenesisPass(userId: string, creatorId: string, tie
   }
   const auth = await paymentProvider.authorize({ userId, amountCents: tierCents, purpose: "genesis_pass" });
   await paymentProvider.capture(auth.authRef);
-  return prisma.$transaction(async (tx) =>
+  return moneyTx(async (tx) =>
     issueGenesisPassInTx(tx, userId, creatorId, tierCents),
   );
 }
