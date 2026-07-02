@@ -1,6 +1,10 @@
-// Deterministic gradient monogram — the zero-asset identity system.
-// Same handle always renders the same two-color gradient, so creators are
-// recognizable across every surface without uploaded media.
+import type { CSSProperties } from "react";
+
+// The identity system. Every name hashes to a fixed two-color gradient pair:
+// with no photo that pair renders as a gradient monogram; with a photo it
+// becomes a duotone poster treatment over the image (see .face in globals.css),
+// so uploaded faces are automatically art-directed into the same palette.
+// Draft profiles never pass a src — unclaimed people stay monograms (consent).
 
 const PAIRS: [string, string][] = [
   ["#c9f73a", "#3d7bff"], // lime → volt
@@ -19,6 +23,11 @@ function hash(text: string): number {
   return h;
 }
 
+/** The gradient pair a given name resolves to (shared with upload previews). */
+export function gradientPair(name: string): [string, string] {
+  return PAIRS[hash(name.toLowerCase()) % PAIRS.length]!;
+}
+
 const SIZES = {
   sm: "h-8 w-8 rounded-md text-xs",
   md: "h-12 w-12 rounded-lg text-lg",
@@ -33,18 +42,44 @@ const RINGS = {
   none: "",
 } as const;
 
+/** view-transition-name must be a CSS ident — normalize handles/usernames. */
+function morphName(key: string): string {
+  return `face-${key.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
+}
+
 export function Monogram({
   name,
+  src,
   size = "md",
   ring = "none",
+  morph,
   className = "",
 }: {
   name: string;
+  src?: string | null;
   size?: keyof typeof SIZES;
   ring?: keyof typeof RINGS;
+  /** Shared-element morph key (usually the handle). Use at most once per
+      surface per key — duplicate names cancel the whole view transition. */
+  morph?: string;
   className?: string;
 }) {
-  const [from, to] = PAIRS[hash(name.toLowerCase()) % PAIRS.length]!;
+  const [from, to] = gradientPair(name);
+  const style: CSSProperties = morph ? { viewTransitionName: morphName(morph) } : {};
+  const gradient = `linear-gradient(135deg, ${from}, ${to})`;
+
+  if (src) {
+    return (
+      <span aria-hidden className={`face inline-flex shrink-0 ${SIZES[size]} ${RINGS[ring]} ${className}`} style={style}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" loading="lazy" />
+        <span className="face-tone face-tone-screen" style={{ backgroundImage: gradient }} />
+        <span className="face-tone face-tone-multiply" style={{ backgroundImage: gradient }} />
+        <span className="face-lines" />
+      </span>
+    );
+  }
+
   const initials = name
     .split(/[\s_-]+/)
     .filter(Boolean)
@@ -55,7 +90,7 @@ export function Monogram({
     <span
       aria-hidden
       className={`display inline-flex shrink-0 select-none items-center justify-center text-ink ${SIZES[size]} ${RINGS[ring]} ${className}`}
-      style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
+      style={{ ...style, backgroundImage: gradient }}
     >
       {initials || "?"}
     </span>

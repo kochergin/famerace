@@ -17,7 +17,7 @@ async function startClaimAction(formData: FormData) {
   await withErrorRedirect(`/claim/${draftId}`, async () => {
     await claim.startClaim(user.id, draftId);
   });
-  redirect("/dashboard");
+  redirect("/dashboard?claimed=1");
 }
 
 /** Claim Room (PRD §0A.6 status 2): where a creator claims their draft. */

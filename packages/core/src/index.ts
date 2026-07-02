@@ -27,5 +27,6 @@ export * as notify from "./modules/notify";
 export * as messages from "./modules/messages";
 export * as requests from "./modules/requests";
 export * as launchkit from "./modules/launchkit";
+export * as media from "./modules/media";
 export type { DraftBoardRow } from "./modules/draft";
 export type { DemandSummary } from "./modules/demand";

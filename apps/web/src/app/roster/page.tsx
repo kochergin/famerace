@@ -93,7 +93,13 @@ export default async function RosterPage() {
               <Link key={entry.id} href={href} className="card block p-4" style={{ "--glow": "rgb(255 61 141 / 0.25)" } as React.CSSProperties}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <Monogram name={name} size="md" ring={backed ? "gold" : creator?.status === "LIVE" ? "live" : "draft"} />
+                    <Monogram
+                      name={name}
+                      src={creator?.avatarUrl}
+                      size="md"
+                      ring={backed ? "gold" : creator?.status === "LIVE" ? "live" : "draft"}
+                      morph={creator ? creator.handle : draft ? `draft-${draft.id}` : undefined}
+                    />
                     <div>
                       <p className="text-xs text-muted">{category ? CATEGORY_LABELS[category] : ""}</p>
                       <h3 className="display text-2xl">{name}</h3>

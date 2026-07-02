@@ -167,7 +167,7 @@ export async function topScouts(limit = 20) {
   const claimedMap = new Map(claimed.map((c) => [c.scoutUserId, c._count]));
   const users = await prisma.user.findMany({
     where: { id: { in: grouped.map((g) => g.scoutUserId) } },
-    select: { id: true, username: true, displayName: true },
+    select: { id: true, username: true, displayName: true, avatarUrl: true },
   });
   const userMap = new Map(users.map((u) => [u.id, u]));
   return grouped

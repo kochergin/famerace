@@ -6,7 +6,9 @@
  *
  * Run: npm run db:seed  (idempotent-ish: aborts if users already exist)
  */
+import { Resvg } from "@resvg/resvg-js";
 import { prisma } from "../packages/db/src/index";
+import * as media from "../packages/core/src/modules/media";
 import * as users from "../packages/core/src/modules/users";
 import * as draft from "../packages/core/src/modules/draft";
 import * as demand from "../packages/core/src/modules/demand";
@@ -21,6 +23,61 @@ import * as scores from "../packages/core/src/modules/scores";
 import * as messages from "../packages/core/src/modules/messages";
 import * as requests from "../packages/core/src/modules/requests";
 import { assertLedgerBalanced } from "../packages/core/src/modules/ledger";
+
+// ── Procedural poster portraits ─────────────────────────────────────────
+// The demo shows the real photo pipeline without stock photos: each seeded
+// face is generative poster art (halftone field, abstract head-and-shoulders
+// silhouette, sweeping arc), rendered to PNG and stored through the same
+// media.storeAvatar path a real upload takes. The web app's duotone
+// treatment then maps it into that creator's monogram palette.
+const POSTER_PAIRS: [string, string][] = [
+  ["#c9f73a", "#3d7bff"],
+  ["#ff3d8d", "#f0c33c"],
+  ["#3d7bff", "#ff3d8d"],
+  ["#f0c33c", "#c9f73a"],
+  ["#ff3d8d", "#7a1f33"],
+  ["#3d7bff", "#c9f73a"],
+  ["#f0c33c", "#ff3d8d"],
+  ["#c9f73a", "#f0c33c"],
+];
+
+function posterPortraitSvg(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const [a, b] = POSTER_PAIRS[h % POSTER_PAIRS.length]!;
+  const rot = (h % 16) - 8;
+  const cx = 200 + (h % 112);
+  const dots: string[] = [];
+  for (let row = 0; row < 8; row += 1) {
+    for (let col = 0; col < 8; col += 1) {
+      const r = 2.5 + ((row + col + h) % 5);
+      dots.push(`<circle cx="${32 + col * 64}" cy="${32 + row * 64}" r="${r}" fill="${a}" opacity="0.15"/>`);
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="${b}"/><stop offset="1" stop-color="${a}"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0b0b10"/>
+  ${dots.join("\n  ")}
+  <g transform="rotate(${rot} 256 256)">
+    <circle cx="${cx}" cy="196" r="88" fill="url(#g)"/>
+    <path d="M ${cx - 168} 512 Q ${cx} 268 ${cx + 168} 512 Z" fill="url(#g2)"/>
+  </g>
+  <path d="M 36 ${332 + (h % 64)} A 250 250 0 0 1 476 ${168 + (h % 88)}" stroke="${b}" stroke-width="13" fill="none" opacity="0.75"/>
+  <polygon points="${336 + (h % 64)},0 512,0 512,${192 + (h % 96)}" fill="#ffffff" opacity="0.05"/>
+</svg>`;
+}
+
+async function posterAvatar(userId: string, name: string, target: "user" | "creator") {
+  const png = new Resvg(posterPortraitSvg(name), { fitTo: { mode: "width", value: 512 } }).render().asPng();
+  await media.storeAvatar(userId, { bytes: png }, target);
+}
 
 async function main() {
   if ((await prisma.user.count()) > 0) {
@@ -259,6 +316,13 @@ async function main() {
   });
   await claim.approveLaunchKit(admin.id, kai.id);
   await claim.scheduleLaunch(admin.id, kai.id, new Date(Date.now() + 36 * 3600_000));
+
+  console.log("seed: poster portraits…");
+  await posterAvatar(miraUser.id, "MIRA", "creator");
+  await posterAvatar(kaiUser.id, "KAI", "creator");
+  await posterAvatar(fans[0]!.id, "novafan", "user");
+  await posterAvatar(scout1.id, "talentradar", "user");
+  await posterAvatar(scout2.id, "earlyalex", "user");
 
   console.log("seed: crews + scores…");
   const crew1 = await streetteam.createCrew(fans[0]!.id, {

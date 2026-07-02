@@ -13,6 +13,7 @@ import { StreetTeamSection } from "./street-team";
 import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
+import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
 import { Countdown } from "@/components/countdown";
 import { Sparkline } from "@/components/sparkline";
@@ -134,6 +135,7 @@ export default async function CreatorPage({
 
   return (
     <div className="mx-auto max-w-4xl">
+      {flags.backed || flags.pass ? <Confetti fireKey={flags.backed ? "backed" : "pass"} /> : null}
       {flags.backed ? (
         <Banner tone="lime">
           You backed {creator.displayName}
@@ -157,8 +159,10 @@ export default async function CreatorPage({
           <div className="flex items-start gap-5">
             <Monogram
               name={creator.displayName}
+              src={creator.avatarUrl}
               size="xl"
               ring={creator.status === "LIVE" ? "live" : "draft"}
+              morph={creator.handle}
               className="mt-1"
             />
             <div>
@@ -441,9 +445,10 @@ export default async function CreatorPage({
           </section>
         </div>
       ) : null}
-      <p className="mt-8 text-center text-xs text-muted">
+      {/* div, not p: ReportForm renders a <details> block, invalid inside <p> */}
+      <div className="mt-8 text-center text-xs text-muted">
         Something wrong here? <ReportForm objectType="Creator" objectId={creator.id} backTo={`/c/${handle}`} />
-      </p>
+      </div>
     </div>
   );
 }

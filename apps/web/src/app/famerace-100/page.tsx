@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@famerace/db";
 import type { CreatorCategory } from "@famerace/db";
 import { Monogram } from "@/components/monogram";
+import { TiltCard } from "@/components/tilt-card";
 import { EmptyState, SectionTitle, StatusChip } from "@/components/ui";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 
@@ -122,15 +123,21 @@ export default async function FameRace100Page({
                 "rgb(205 127 50 / 0.12)",
               ][index]!;
               return (
+                <TiltCard key={creator.id}>
                 <Link
-                  key={creator.id}
                   href={`/c/${creator.handle}`}
                   className="card spotlight block p-5 text-center"
                   style={{ "--spot": spot } as React.CSSProperties}
                 >
                   <p className={`display text-4xl ${medal}`}>#{index + 1}</p>
                   <div className="mt-3 flex justify-center">
-                    <Monogram name={creator.displayName} size="lg" ring={index === 0 ? "gold" : "none"} />
+                    <Monogram
+                      name={creator.displayName}
+                      src={creator.avatarUrl}
+                      size="lg"
+                      ring={index === 0 ? "gold" : "none"}
+                      morph={creator.handle}
+                    />
                   </div>
                   <h3 className="display mt-2 truncate text-2xl">{creator.displayName}</h3>
                   <p className="stat mt-1 text-sm text-muted">
@@ -142,6 +149,7 @@ export default async function FameRace100Page({
                     ) : null}
                   </p>
                 </Link>
+                </TiltCard>
               );
             })}
           </div>
@@ -151,7 +159,13 @@ export default async function FameRace100Page({
             <li key={creator.id} className="flex items-center justify-between gap-2 px-5 py-3">
               <Link href={`/c/${creator.handle}`} className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80">
                 <span className="stat w-8 shrink-0 text-right text-muted">#{index + 1}</span>
-                <Monogram name={creator.displayName} size="sm" />
+                {/* top-3 already carry the morph name on the podium — duplicates cancel it */}
+                <Monogram
+                  name={creator.displayName}
+                  src={creator.avatarUrl}
+                  size="sm"
+                  morph={scored.length >= 2 && index < 3 ? undefined : creator.handle}
+                />
                 <span className="min-w-0">
                   <span className="font-semibold text-chalk">{creator.displayName}</span>{" "}
                   <span className="text-xs text-muted">

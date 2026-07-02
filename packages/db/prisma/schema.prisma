@@ -533,6 +533,7 @@ model Creator {
   displayName        String
   handle             String             @unique
   category           CreatorCategory
+  avatarUrl          String?
   bio                String?
   story              String?
   socialLinks        Json?
@@ -1312,6 +1313,22 @@ model AuditLog {
 
   @@index([objectType, objectId, createdAt])
   @@index([actorId])
+}
+
+// ───────────────────────── media ─────────────────────────
+
+// Uploaded avatar bytes, served from /img/[id]. Self-contained (no external
+// object store); avatarUrl columns store "/img/<id>". DraftProfile deliberately
+// has no photo field — the consent gate keeps unclaimed people name-only.
+model MediaAsset {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  kind        String   @default("AVATAR")
+  mime        String
+  bytes       Bytes
+  createdAt   DateTime @default(now())
+
+  @@index([ownerUserId])
 }
 
 // ───────────────────────── season config ─────────────────────────

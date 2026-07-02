@@ -7,6 +7,7 @@ import { DraftCard } from "@/components/draft-card";
 import { LiveFeed } from "@/components/live-feed";
 import { Monogram } from "@/components/monogram";
 import { Sparkline } from "@/components/sparkline";
+import { TiltCard } from "@/components/tilt-card";
 import { FuelBar, SectionTitle } from "@/components/ui";
 import { money, num } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -120,31 +121,38 @@ export default async function HomePage() {
               </SectionTitle>
               <div className={`grid gap-3 ${liveCreators.length === 1 ? "" : "sm:grid-cols-2"}`}>
                 {liveCreators.map((creator) => (
-                  <Link
-                    key={creator.id}
-                    href={`/c/${creator.handle}`}
-                    className="card spotlight block p-5"
-                    style={{ "--glow": "rgb(201 247 58 / 0.25)" } as React.CSSProperties}
-                  >
-                    <div className="flex items-center gap-4">
-                      <Monogram name={creator.displayName} size="lg" ring="live" />
-                      <div className="min-w-0 flex-1">
-                        <p className="stat text-xs text-muted">
-                          ${creator.market?.ticker} · Fame {creator.fameScore}
-                        </p>
-                        <h3 className="display truncate text-3xl">{creator.displayName}</h3>
+                  <TiltCard key={creator.id}>
+                    <Link
+                      href={`/c/${creator.handle}`}
+                      className="card spotlight block p-5"
+                      style={{ "--glow": "rgb(201 247 58 / 0.25)" } as React.CSSProperties}
+                    >
+                      <div className="flex items-center gap-4">
+                        <Monogram
+                          name={creator.displayName}
+                          src={creator.avatarUrl}
+                          size="lg"
+                          ring="live"
+                          morph={creator.handle}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="stat text-xs text-muted">
+                            ${creator.market?.ticker} · Fame {creator.fameScore}
+                          </p>
+                          <h3 className="display truncate text-3xl">{creator.displayName}</h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="stat text-2xl font-bold text-lime">{money(creator.market?.priceCents ?? 0)}</p>
+                          <p className="text-xs text-muted">{num(creator.market?.holderCount ?? 0)} holders</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="stat text-2xl font-bold text-lime">{money(creator.market?.priceCents ?? 0)}</p>
-                        <p className="text-xs text-muted">{num(creator.market?.holderCount ?? 0)} holders</p>
-                      </div>
-                    </div>
-                    {sparklines.has(creator.id) ? (
-                      <div className="mt-3 border-t border-edge pt-3">
-                        <Sparkline points={sparklines.get(creator.id)!} width={560} height={44} className="w-full" />
-                      </div>
-                    ) : null}
-                  </Link>
+                      {sparklines.has(creator.id) ? (
+                        <div className="mt-3 border-t border-edge pt-3">
+                          <Sparkline points={sparklines.get(creator.id)!} width={560} height={44} className="w-full" />
+                        </div>
+                      ) : null}
+                    </Link>
+                  </TiltCard>
                 ))}
               </div>
             </section>
@@ -157,9 +165,16 @@ export default async function HomePage() {
               </SectionTitle>
               <div className={`grid gap-3 ${launching.length === 1 ? "" : "sm:grid-cols-2"}`}>
                 {launching.map((creator) => (
-                  <Link key={creator.id} href={`/c/${creator.handle}`} className="card block p-5" style={{ "--glow": "rgb(201 247 58 / 0.2)" } as React.CSSProperties}>
+                  <TiltCard key={creator.id}>
+                  <Link href={`/c/${creator.handle}`} className="card block p-5" style={{ "--glow": "rgb(201 247 58 / 0.2)" } as React.CSSProperties}>
                     <div className="flex items-center gap-4">
-                      <Monogram name={creator.displayName} size="lg" ring="draft" />
+                      <Monogram
+                        name={creator.displayName}
+                        src={creator.avatarUrl}
+                        size="lg"
+                        ring="draft"
+                        morph={creator.handle}
+                      />
                       <div className="min-w-0 flex-1">
                         <h3 className="display truncate text-3xl">{creator.displayName}</h3>
                         <p className="text-xs uppercase tracking-wide text-muted">
@@ -175,6 +190,7 @@ export default async function HomePage() {
                       ) : null}
                     </div>
                   </Link>
+                  </TiltCard>
                 ))}
               </div>
             </section>
@@ -237,7 +253,7 @@ export default async function HomePage() {
                   <li key={scout.user!.id}>
                     <Link href={`/u/${scout.user!.username}`} className="flex items-center gap-2 transition hover:opacity-80">
                       <span className="stat w-5 text-muted">#{index + 1}</span>
-                      <Monogram name={scout.user!.username} size="sm" />
+                      <Monogram name={scout.user!.username} src={scout.user!.avatarUrl} size="sm" />
                       <span className="min-w-0 flex-1 truncate text-volt">@{scout.user!.username}</span>
                       <span className="stat text-muted">{scout.claimed} claimed</span>
                     </Link>

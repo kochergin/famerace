@@ -7,6 +7,8 @@ import { SectionTitle, Stat } from "@/components/ui";
 import { CATEGORY_LABELS, money, num, timeAgo } from "@/lib/format";
 import { currentUser, requireCurrentUser } from "@/lib/session";
 import { PledgePanel } from "./pledge-panel";
+import { Confetti } from "@/components/confetti";
+import { Monogram } from "@/components/monogram";
 import { ShareRow } from "@/components/share";
 
 export const dynamic = "force-dynamic";
@@ -79,9 +81,12 @@ export default async function DraftProfilePage({
         </p>
       ) : null}
       {pledged ? (
-        <p className="mb-4 rounded border border-lime/30 bg-lime/5 px-3 py-2 text-sm text-lime">
-          Demand order placed. You will get a confirmation window before anything becomes binding.
-        </p>
+        <>
+          <Confetti fireKey="pledged" />
+          <p className="mb-4 rounded border border-lime/30 bg-lime/5 px-3 py-2 text-sm text-lime">
+            Demand order placed. You will get a confirmation window before anything becomes binding.
+          </p>
+        </>
       ) : null}
       {error ? (
         <p className="mb-4 rounded border border-pink/40 bg-pink/10 px-3 py-2 text-sm text-pink">{error}</p>
@@ -89,7 +94,9 @@ export default async function DraftProfilePage({
 
       <div className="card p-6">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex items-start gap-4">
+            <Monogram name={profile.nameOrHandle} size="lg" ring="draft" morph={`draft-${profile.id}`} className="mt-1" />
+            <div>
             <p className="stat text-sm text-muted">DRAFT PROFILE</p>
             <h1 className="display mt-1 text-5xl">{profile.nameOrHandle}</h1>
             <p className="mt-1 text-muted">
@@ -103,6 +110,7 @@ export default async function DraftProfilePage({
                 </>
               ) : null}
             </p>
+            </div>
           </div>
           {claimed ? (
             <Link href={`/c/${profile.claimedCreator!.handle}`} className="chip bg-lime text-ink">

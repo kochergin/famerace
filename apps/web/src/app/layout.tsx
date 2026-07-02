@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_ViewTransition as ViewTransition } from "react";
 import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { copy, notify } from "@famerace/core";
 import { currentUser } from "@/lib/session";
@@ -76,7 +77,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     ) : null}
                   </Link>
                   <Link href={`/u/${user.username}`} className="flex items-center gap-2 font-semibold text-chalk transition hover:text-lime">
-                    <Monogram name={user.username} size="sm" />
+                    <Monogram name={user.username} src={user.avatarUrl} size="sm" />
                     <span className="hidden sm:inline">@{user.username}</span>
                   </Link>
                 </>
@@ -103,7 +104,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ))}
           </nav>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 py-6">
+          <ViewTransition>{children}</ViewTransition>
+        </main>
         <footer className="mt-16 border-t border-edge py-8 text-center text-xs text-muted">
           <p className="display text-lg text-chrome">{copy.tagline}</p>
           <p className="mt-2 mx-auto max-w-lg">{copy.footerLegal}</p>

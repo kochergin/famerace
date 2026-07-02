@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { notify, DomainError } from "@famerace/core";
 import { prisma } from "@famerace/db";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { FormError } from "@/components/form-error";
 import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
@@ -17,7 +18,6 @@ async function saveSettingsAction(formData: FormData) {
     if (displayName.length < 1 || displayName.length > 60) {
       throw new DomainError("BAD_NAME", "Display name must be 1–60 characters");
     }
-    const avatarUrl = String(formData.get("avatarUrl") ?? "").trim();
     const walletAddress = String(formData.get("walletAddress") ?? "").trim();
     if (walletAddress && !/^0x[a-fA-F0-9]{40}$|^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(walletAddress)) {
       throw new DomainError("BAD_WALLET", "That does not look like a wallet address (EVM or Solana)");
@@ -27,7 +27,6 @@ async function saveSettingsAction(formData: FormData) {
         where: { id: user.id },
         data: {
           displayName,
-          avatarUrl: avatarUrl || null,
           country: String(formData.get("country") ?? "").trim() || null,
           walletAddress: walletAddress || null,
         },
@@ -61,14 +60,13 @@ export default async function SettingsPage({
         <p className="mb-3 rounded border border-lime/30 bg-lime/5 px-3 py-2 text-sm text-lime">Saved.</p>
       ) : null}
       <FormError error={error} />
+      <div className="card mb-4 p-6">
+        <AvatarUpload target="user" name={fresh.username} currentUrl={fresh.avatarUrl} label="Your face" />
+      </div>
       <form action={saveSettingsAction} className="card space-y-4 p-6">
         <label className="block text-xs uppercase tracking-wide text-muted">
           Display name
           <input name="displayName" defaultValue={fresh.displayName} required className={`mt-1 ${inputClass}`} />
-        </label>
-        <label className="block text-xs uppercase tracking-wide text-muted">
-          Avatar URL
-          <input name="avatarUrl" type="url" defaultValue={fresh.avatarUrl ?? ""} placeholder="https://…" className={`mt-1 ${inputClass}`} />
         </label>
         <label className="block text-xs uppercase tracking-wide text-muted">
           Country

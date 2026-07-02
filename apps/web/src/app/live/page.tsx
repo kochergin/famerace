@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@famerace/db";
+import { Monogram } from "@/components/monogram";
 import { EmptyState, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 
@@ -30,7 +31,16 @@ export default async function LivePage() {
                 </p>
                 <StatusChip status={creator.market?.status === "PAUSED" ? "PAUSED" : "LIVE"} />
               </div>
-              <h3 className="display mt-2 text-3xl">{creator.displayName}</h3>
+              <div className="mt-2 flex items-center gap-3">
+                <Monogram
+                  name={creator.displayName}
+                  src={creator.avatarUrl}
+                  size="md"
+                  ring={creator.market?.status === "PAUSED" ? "none" : "live"}
+                  morph={creator.handle}
+                />
+                <h3 className="display min-w-0 truncate text-3xl">{creator.displayName}</h3>
+              </div>
               {creator.followerCount > 0 ? (
                 <p className="stat mt-0.5 text-xs text-pink">{num(creator.followerCount)} followers</p>
               ) : null}

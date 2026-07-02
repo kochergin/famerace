@@ -99,7 +99,13 @@ export default async function LaunchingPage() {
               style={{ "--spot": "rgb(201 247 58 / 0.1)", "--glow": "rgb(201 247 58 / 0.25)" } as React.CSSProperties}
             >
               <div className="flex flex-wrap items-center gap-5">
-                <Monogram name={creator.displayName} size="xl" ring="draft" />
+                <Monogram
+                  name={creator.displayName}
+                  src={creator.avatarUrl}
+                  size="xl"
+                  ring="draft"
+                  morph={creator.handle}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="stat text-xs text-muted">
                     {creator.market ? `$${creator.market.ticker}` : ""} · {CATEGORY_LABELS[creator.category]}

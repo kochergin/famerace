@@ -35,7 +35,12 @@ export function DraftCard({ profile }: { profile: DraftBoardRow }) {
         )}
       </div>
       <div className="relative mt-2 flex items-center gap-3">
-        <Monogram name={profile.nameOrHandle} size="md" ring={profile.claimStatus === "CLAIMED" ? "live" : "draft"} />
+        <Monogram
+          name={profile.nameOrHandle}
+          size="md"
+          ring={profile.claimStatus === "CLAIMED" ? "live" : "draft"}
+          morph={`draft-${profile.id}`}
+        />
         <div className="min-w-0">
           <h3 className="display truncate text-3xl">{profile.nameOrHandle}</h3>
           <p className="text-sm text-muted">{CATEGORY_LABELS[profile.category]} · nominated by fans</p>

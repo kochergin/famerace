@@ -6,6 +6,7 @@ import { prisma } from "@famerace/db";
 import { ReportForm } from "@/components/report";
 import { withErrorRedirect } from "@/lib/action";
 import { Monogram } from "@/components/monogram";
+import { TiltCard } from "@/components/tilt-card";
 import { SectionTitle, Stat } from "@/components/ui";
 import { num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -62,7 +63,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-4">
-          <Monogram name={user.username} size="xl" />
+          <Monogram name={user.username} src={user.avatarUrl} size="xl" />
           <div>
           <h1 className="display text-5xl">@{user.username}</h1>
           <p className="mt-1 text-muted">
@@ -119,18 +120,19 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
           <SectionTitle>Badges — permanent proof</SectionTitle>
           <div className="flex flex-wrap gap-2">
             {user.badges.map((badge) => (
-              <span
-                key={badge.id}
-                className={`badge-card chip border px-3 py-1.5 ${
-                  badge.badgeType === "GENESIS_BACKER"
-                    ? "border-gold/50 bg-gold/10 text-gold"
-                    : badge.badgeType === "GENESIS_SCOUT"
-                      ? "border-volt/50 bg-volt/10 text-volt"
-                      : "border-lime/50 bg-lime/10 text-lime"
-                }`}
-              >
-                {badge.label}
-              </span>
+              <TiltCard key={badge.id} max={10}>
+                <span
+                  className={`badge-card chip border px-3 py-1.5 ${
+                    badge.badgeType === "GENESIS_BACKER"
+                      ? "border-gold/50 bg-gold/10 text-gold"
+                      : badge.badgeType === "GENESIS_SCOUT"
+                        ? "border-volt/50 bg-volt/10 text-volt"
+                        : "border-lime/50 bg-lime/10 text-lime"
+                  }`}
+                >
+                  {badge.label}
+                </span>
+              </TiltCard>
             ))}
           </div>
         </section>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { claim, copy } from "@famerace/core";
+import { AvatarUpload } from "@/components/avatar-upload";
+import { Confetti } from "@/components/confetti";
 import { FormError } from "@/components/form-error";
 import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
@@ -72,9 +74,9 @@ const inputClass =
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; claimed?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, claimed } = await searchParams;
   const user = await requireCurrentUser().catch(() => null);
   if (!user) redirect("/login");
   const creator = await claim.creatorForUser(user.id);
@@ -111,7 +113,17 @@ export default async function DashboardPage({
         </div>
         <StatusChip status={creator.status} />
       </div>
+      {claimed ? <Confetti fireKey="claimed" /> : null}
       <FormError error={error} />
+
+      <div className="card mt-4 p-5">
+        <AvatarUpload
+          target="creator"
+          name={creator.displayName}
+          currentUrl={creator.avatarUrl}
+          label="Your public face — shown on your page, the boards and the FameRace 100"
+        />
+      </div>
 
       {creator.draftProfile ? (
         <div className="card mt-4 grid grid-cols-3 gap-4 p-4">
