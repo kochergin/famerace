@@ -281,6 +281,28 @@ export async function buildCard(template: CardTemplate, subjectRef: string, view
         ],
       };
     }
+    case "CALLED_IT": {
+      const stakeRow = await prisma.callStake.findFirst({
+        where: { callId: subjectRef, userId: viewerUserId, settled: true, payout: { gt: 0 } },
+        include: { call: { include: { creator: { select: { displayName: true } } } } },
+      });
+      if (!stakeRow) throw notFound("Winning call");
+      const total = stakeRow.call.yesPoints + stakeRow.call.noPoints;
+      const doubters = total > 0
+        ? Math.round(((stakeRow.side === "YES" ? stakeRow.call.noPoints : stakeRow.call.yesPoints) / total) * 100)
+        : 0;
+      return {
+        accent: COLORS.lime,
+        kicker: "Called it ✓",
+        headline: stakeRow.call.creator.displayName,
+        sub: stakeRow.call.question,
+        stats: [
+          { label: "My side", value: stakeRow.side },
+          { label: "Doubted by", value: `${doubters}%` },
+          { label: "Points won", value: String(stakeRow.payout - stakeRow.points) },
+        ],
+      };
+    }
     default:
       throw notFound("Card template");
   }

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { copy, market as marketMod } from "@famerace/core";
+import { calls as callsMod, copy, market as marketMod, supporters as supportersMod } from "@famerace/core";
 import { prisma } from "@famerace/db";
+import type { CallSide } from "@famerace/db";
 import { FormError } from "@/components/form-error";
 import { RiskDisclosure, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
@@ -14,6 +15,7 @@ import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
 import { Backdrop } from "@/components/backdrop";
+import { CallCard } from "@/components/call-card";
 import { CategoryGlyph } from "@/components/category-art";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
@@ -78,6 +80,22 @@ async function passAction(formData: FormData) {
   redirect(`/c/${handle}?pass=1`);
 }
 
+async function callStakeAction(handle: string, formData: FormData) {
+  "use server";
+  const user = await currentUser();
+  if (!user) redirect("/join");
+  await withErrorRedirect(`/c/${handle}`, async () => {
+    await callsMod.stake(
+      user.id,
+      String(formData.get("callId")),
+      String(formData.get("side")) as CallSide,
+      Math.round(Number(formData.get("points") || 0)),
+    );
+  });
+  revalidatePath(`/c/${handle}`);
+  redirect(`/c/${handle}?called=1`);
+}
+
 export default async function CreatorPage({
   params,
   searchParams,
@@ -90,6 +108,7 @@ export default async function CreatorPage({
     paid?: string;
     sold?: string;
     pass?: string;
+    called?: string;
     messaged?: string;
     requested?: string;
     reported?: string;
@@ -134,6 +153,11 @@ export default async function CreatorPage({
   const perks = Array.isArray(creator.perks) ? (creator.perks as string[]) : [];
   const socials = Array.isArray(creator.socialLinks) ? (creator.socialLinks as string[]) : [];
   const tradeable = m && ["GENESIS_CURVE", "GRADUATION", "MATURE"].includes(m.status);
+  const [openCalls, topSupporters] = await Promise.all([
+    callsMod.callsForCreator(creator.id),
+    supportersMod.topSupporters(creator.id),
+  ]);
+  const myCallStakes = user ? await callsMod.stakesFor(user.id, openCalls.map((c) => c.id)) : new Map();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -202,6 +226,15 @@ export default async function CreatorPage({
       {flags.sold ? <Banner tone="chrome">Sold back to the curve. Your backer rank stays yours.</Banner> : null}
       {flags.messaged ? <Banner tone="chrome">Paid message sent — respond-to-earn, decline-to-refund.</Banner> : null}
       {flags.requested ? <Banner tone="gold">Request placed. Funds sit in escrow until delivery.</Banner> : null}
+      {flags.called ? (
+        <>
+          <Confetti fireKey="called" />
+          <Banner tone="lime">
+            Call placed — it resolves automatically at the deadline. Being right pays from the other
+            side of the board.
+          </Banner>
+        </>
+      ) : null}
       {flags.reported ? <Banner tone="chrome">Report received. Trust &amp; safety will review it.</Banner> : null}
       <FormError error={flags.error} />
 
@@ -444,6 +477,28 @@ export default async function CreatorPage({
         ) : null}
       </div>
 
+      {/* Calls: the internet's number on this creator (points, never cash) */}
+      {openCalls.length > 0 ? (
+        <section className="mt-6">
+          <SectionTitle right={<Link href="/calls" className="text-xs uppercase text-muted hover:text-lime">All calls →</Link>}>
+            The internet says
+          </SectionTitle>
+          <div className="grid gap-3 md:grid-cols-2">
+            {openCalls.map((call) => (
+              <CallCard
+                key={call.id}
+                call={{ ...call, creator: { handle: creator.handle, displayName: creator.displayName, avatarUrl: creator.avatarUrl } }}
+                stakeAction={callStakeAction.bind(null, handle)}
+                myStake={myCallStakes.get(call.id)}
+                signedIn={Boolean(user)}
+                myPoints={user?.points}
+                showCreator={false}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <MissionSection missions={creator.missions} handle={handle} signedIn={Boolean(user)} />
       {creator.status === "LIVE" ? (
         <>
@@ -505,6 +560,44 @@ export default async function CreatorPage({
             </div>
           </section>
         </div>
+      ) : null}
+
+      {/* Whale layer: status is the product — tiers are public */}
+      {topSupporters.length > 0 ? (
+        <section className="card mt-6 p-6">
+          <SectionTitle>Top supporters</SectionTitle>
+          <p className="mb-3 text-xs text-muted">
+            The people putting the most behind {creator.displayName} — passes, missions, drops and
+            tips.
+          </p>
+          <ol className="grid gap-2 sm:grid-cols-2">
+            {topSupporters.map((s) => (
+              <li key={s.user.id}>
+                <Link
+                  href={`/u/${s.user.username}`}
+                  className="flex items-center gap-3 rounded border border-edge p-2.5 transition hover:border-gold"
+                >
+                  <span className={`stat w-5 text-right ${s.rank === 1 ? "text-gold" : "text-muted"}`}>#{s.rank}</span>
+                  <Monogram name={s.user.username} src={s.user.avatarUrl} size="sm" ring={s.rank === 1 ? "gold" : "none"} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-chalk">@{s.user.username}</span>
+                  <span
+                    className={`chip ${
+                      s.tier === "SUPERFAN"
+                        ? "bg-gold/15 text-gold border border-gold/50"
+                        : s.tier === "VIP"
+                          ? "bg-pink/15 text-pink border border-pink/50"
+                          : s.tier === "INSIDER"
+                            ? "bg-volt/15 text-volt border border-volt/50"
+                            : "bg-lime/10 text-lime border border-lime/40"
+                    }`}
+                  >
+                    {s.tier}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
       ) : null}
       {/* div, not p: ReportForm renders a <details> block, invalid inside <p> */}
       <div className="mt-8 text-center text-xs text-muted">

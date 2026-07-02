@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { backstage, claim, drops as dropsMod } from "@famerace/core";
+import { backstage, claim, drops as dropsMod, media } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { FormError } from "@/components/form-error";
 import { SectionTitle } from "@/components/ui";
@@ -35,10 +35,17 @@ async function postAction(formData: FormData) {
   "use server";
   const user = await requireCurrentUser();
   await withErrorRedirect(BACK, async () => {
+    const file = formData.get("media");
+    let mediaUrl = "";
+    if (file instanceof File && file.size > 0) {
+      const stored = await media.storeMedia(user.id, { bytes: new Uint8Array(await file.arrayBuffer()) }, "POST");
+      mediaUrl = stored.url;
+    }
     await backstage.createPost(user.id, {
       title: String(formData.get("title") ?? ""),
       body: String(formData.get("body") ?? ""),
       preview: String(formData.get("preview") ?? ""),
+      mediaUrl,
       visibility: String(formData.get("visibility") ?? "MEMBERS") as never,
     });
   });
@@ -51,11 +58,17 @@ async function dropAction(formData: FormData) {
   const user = await requireCurrentUser();
   await withErrorRedirect(BACK, async () => {
     const limit = Number(formData.get("quantityLimit") || 0);
+    const file = formData.get("media");
+    let mediaUrl = String(formData.get("mediaUrl") ?? "");
+    if (file instanceof File && file.size > 0) {
+      const stored = await media.storeMedia(user.id, { bytes: new Uint8Array(await file.arrayBuffer()) }, "DROP");
+      mediaUrl = stored.url;
+    }
     await dropsMod.createDrop(user.id, {
       title: String(formData.get("title") ?? ""),
       description: String(formData.get("description") ?? ""),
       previewText: String(formData.get("previewText") ?? ""),
-      mediaUrl: String(formData.get("mediaUrl") ?? ""),
+      mediaUrl,
       priceCents: Math.round(Number(formData.get("price") || 0) * 100),
       quantityLimit: limit > 0 ? limit : undefined,
     });
@@ -135,6 +148,10 @@ export default async function DashboardBackstagePage({
         <input name="title" placeholder="Post title" required className={inputClass} />
         <textarea name="body" placeholder="The content members unlock" required rows={3} className={inputClass} />
         <input name="preview" placeholder="Public teaser (shown to non-members)" className={inputClass} />
+        <label className="block text-xs uppercase tracking-wide text-muted">
+          Photo (members see it sharp — everyone else sees the locked blur)
+          <input name="media" type="file" accept="image/png,image/jpeg,image/webp" className={`mt-1 ${inputClass}`} />
+        </label>
         <select name="visibility" className={inputClass} defaultValue="MEMBERS">
           <option value="MEMBERS">Members</option>
           <option value="HOLDERS">Holders only</option>
@@ -160,6 +177,10 @@ export default async function DashboardBackstagePage({
         <textarea name="description" placeholder="What buyers unlock" required minLength={10} rows={2} className={inputClass} />
         <input name="previewText" placeholder="Public preview text" className={inputClass} />
         <input name="mediaUrl" type="url" placeholder="Media link (optional)" className={inputClass} />
+        <label className="block text-xs uppercase tracking-wide text-muted">
+          Cover image (buyers see it sharp — everyone else sees the locked blur)
+          <input name="media" type="file" accept="image/png,image/jpeg,image/webp" className={`mt-1 ${inputClass}`} />
+        </label>
         <div className="grid grid-cols-2 gap-3">
           <input name="price" type="number" min={1} step="0.01" placeholder="Price $" required className={inputClass} />
           <input name="quantityLimit" type="number" min={1} placeholder="Quantity limit (optional)" className={inputClass} />

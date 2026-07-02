@@ -5,6 +5,7 @@ import { DomainError, notFound } from "../errors";
 import { assertTransition, audit, CREATOR_TRANSITIONS } from "../statemachine";
 import * as auctionMod from "./auction";
 import * as backstageMod from "./backstage";
+import * as callsMod from "./calls";
 import * as demandMod from "./demand";
 import * as draftMod from "./draft";
 import * as missionsMod from "./missions";
@@ -270,7 +271,7 @@ export async function matureGraduatedMarkets(): Promise<number> {
 
 /** All periodic jobs in one sweep — the admin button and the cron entrypoint. */
 export async function runSweeps() {
-  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured] =
+  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved] =
     await Promise.all([
       auctionMod.settleDueLaunches(),
       demandMod.expireStaleOrders(),
@@ -282,6 +283,7 @@ export async function runSweeps() {
       detectWashTrading(),
       draftMod.snapshotDraftRanks(),
       matureGraduatedMarkets(),
+      callsMod.resolveDueCalls(),
     ]);
-  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured };
+  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved };
 }

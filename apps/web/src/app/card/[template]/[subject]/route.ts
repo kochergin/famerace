@@ -18,6 +18,7 @@ const TEMPLATES = new Set([
   "CREATOR_REVENUE",
   "TASTE_SCORE",
   "CREW",
+  "CALLED_IT",
 ]);
 
 /** Share-card image endpoint: /card/taste_score/username → SVG (§9A.12). */

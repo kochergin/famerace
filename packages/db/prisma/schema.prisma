@@ -376,6 +376,7 @@ enum CardTemplate {
   CREATOR_REVENUE
   TASTE_SCORE
   CREW
+  CALLED_IT
 }
 
 enum NotificationType {
@@ -488,6 +489,7 @@ model User {
   blocksMade       UserBlock[]       @relation("Blocker")
   blocksReceived   UserBlock[]       @relation("Blocked")
   bountiesEarned   ClaimBounty[]
+  callStakes       CallStake[]
 }
 
 model Session {
@@ -569,6 +571,7 @@ model Creator {
   fameScores      FameScore[]
   demandOrders    FanDemandOrder[]
   genesisPasses   GenesisPass[]
+  calls           Call[]
 
   @@index([status, category])
 }
@@ -1313,6 +1316,73 @@ model AuditLog {
 
   @@index([objectType, objectId, createdAt])
   @@index([actorId])
+}
+
+// ───────────────────────── calls (prediction layer) ─────────────────────────
+
+// Time-boxed public predictions on creators, staked with Taste Points — never
+// cash. Resolution is objective: each call names an internal metric and a
+// threshold, and the sweep resolves it automatically at the deadline.
+// Parimutuel points: winners split the losing pool pro-rata.
+
+enum CallStatus {
+  OPEN
+  RESOLVED_YES
+  RESOLVED_NO
+  VOID
+}
+
+enum CallMetric {
+  HOLDER_COUNT
+  FAME_SCORE
+  PRICE_CENTS
+  MISSION_FUNDED
+  CONFIRMED_BACKERS
+}
+
+enum CallSide {
+  YES
+  NO
+}
+
+model Call {
+  id              String     @id @default(cuid())
+  creatorId       String
+  missionId       String?
+  question        String
+  metric          CallMetric
+  threshold       Int
+  deadline        DateTime
+  status          CallStatus @default(OPEN)
+  yesPoints       Int        @default(0)
+  noPoints        Int        @default(0)
+  resolvedValue   Int?
+  resolvedAt      DateTime?
+  createdByUserId String
+  createdAt       DateTime   @default(now())
+
+  creator Creator     @relation(fields: [creatorId], references: [id])
+  stakes  CallStake[]
+
+  @@index([status, deadline])
+  @@index([creatorId, status])
+}
+
+model CallStake {
+  id        String   @id @default(cuid())
+  callId    String
+  userId    String
+  side      CallSide
+  points    Int
+  payout    Int      @default(0)
+  settled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  call Call @relation(fields: [callId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([callId, userId])
+  @@index([userId, settled])
 }
 
 // ───────────────────────── media ─────────────────────────

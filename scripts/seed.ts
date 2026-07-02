@@ -8,6 +8,7 @@
  */
 import { Resvg } from "@resvg/resvg-js";
 import { prisma } from "../packages/db/src/index";
+import * as callsMod from "../packages/core/src/modules/calls";
 import * as media from "../packages/core/src/modules/media";
 import * as users from "../packages/core/src/modules/users";
 import * as draft from "../packages/core/src/modules/draft";
@@ -329,6 +330,24 @@ async function main() {
   await posterAvatar(scout1.id, "talentradar", "user");
   await posterAvatar(scout2.id, "earlyalex", "user");
 
+  console.log("seed: backstage media…");
+  const studioShot = new Resvg(posterPortraitSvg("studio-diary"), { fitTo: { mode: "width", value: 512 } })
+    .render()
+    .asPng();
+  const stored = await media.storeMedia(miraUser.id, { bytes: studioShot }, "POST");
+  await backstage.createPost(miraUser.id, {
+    title: "Rooftop scene — first stills",
+    body: "Shot the rooftop scene at golden hour. These are the first three frames off the camera — members only until the video drops.",
+    preview: "First stills from the video shoot are in…",
+    mediaUrl: stored.url,
+    visibility: "MEMBERS",
+  });
+  const dropShot = new Resvg(posterPortraitSvg("neon-rain-cover"), { fitTo: { mode: "width", value: 512 } })
+    .render()
+    .asPng();
+  const dropMedia = await media.storeMedia(miraUser.id, { bytes: dropShot }, "DROP");
+  await prisma.drop.updateMany({ where: { creatorId: mira.id }, data: { mediaUrl: dropMedia.url } });
+
   console.log("seed: crews + scores…");
   const crew1 = await streetteam.createCrew(fans[0]!.id, {
     name: "Tokyo Angels",
@@ -344,6 +363,40 @@ async function main() {
   await streetteam.rankCrews();
   await scores.computeAllTasteScores();
   await scores.computeAllFameScores();
+
+  console.log("seed: calls (prediction layer)…");
+  // Season starter Taste Points for the demo accounts.
+  await prisma.user.updateMany({ data: { points: { increment: 200 } } });
+  const openCall = await callsMod.createCall(admin.id, {
+    creatorId: mira.id,
+    question: "Will MIRA pass 10 backers before the weekend?",
+    metric: "HOLDER_COUNT",
+    threshold: 10,
+    deadlineHours: 48,
+  });
+  await callsMod.stake(fans[0]!.id, openCall.id, "YES", 60);
+  await callsMod.stake(fans[1]!.id, openCall.id, "YES", 25);
+  await callsMod.stake(fans[2]!.id, openCall.id, "NO", 40);
+  await callsMod.createCall(admin.id, {
+    creatorId: kai.id,
+    question: "Will KAI hit 8 confirmed backers before launch?",
+    metric: "CONFIRMED_BACKERS",
+    threshold: 8,
+    deadlineHours: 24,
+  });
+  // One already-resolved call so the "Called it ✓" loop shows end to end.
+  const settledCall = await callsMod.createCall(admin.id, {
+    creatorId: mira.id,
+    question: "Will MIRA hold a Fame Score of 20 or more today?",
+    metric: "FAME_SCORE",
+    threshold: 20,
+    deadlineHours: 1,
+  });
+  await callsMod.stake(fans[3]!.id, settledCall.id, "YES", 50);
+  await callsMod.stake(fans[4]!.id, settledCall.id, "NO", 30);
+  await prisma.call.update({ where: { id: settledCall.id }, data: { deadline: new Date(Date.now() - 60_000) } });
+  await callsMod.resolveDueCalls();
+
 
   await assertLedgerBalanced();
   const [userCount, draftCount, eventCount] = await Promise.all([

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { backstage, copy, drops as dropsMod, missions as missionsMod } from "@famerace/core";
 import { prisma, type BackstageTier, type Drop, type Mission } from "@famerace/db";
+import { LockedMedia } from "@/components/locked-media";
 import { FuelBar, RiskDisclosure, SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
@@ -191,10 +192,20 @@ export async function BackstageSection({
                 <span className="text-xs text-muted">{timeAgo(post.createdAt)}</span>
               </div>
               {unlocked ? (
-                <p className="mt-2 whitespace-pre-line text-sm text-chrome">{post.body}</p>
+                <>
+                  <p className="mt-2 whitespace-pre-line text-sm text-chrome">{post.body}</p>
+                  {post.mediaUrl ? <LockedMedia src={post.mediaUrl} unlocked label="" /> : null}
+                </>
               ) : (
                 <div className="mt-2">
                   {post.preview ? <p className="text-sm text-muted">{post.preview}</p> : null}
+                  {post.mediaUrl ? (
+                    <LockedMedia
+                      src={post.mediaUrl}
+                      unlocked={false}
+                      label={post.visibility === "HOLDERS" ? "Holders see this" : "Members see this"}
+                    />
+                  ) : null}
                   <p className="mt-2 text-xs uppercase tracking-widest text-velvet">
                     🔒 {post.visibility === "HOLDERS" ? "Holders only" : "Members only"}
                   </p>
@@ -287,14 +298,13 @@ function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: strin
       {owned ? (
         <>
           <p className="mt-2 whitespace-pre-line text-sm text-chrome">{drop.description}</p>
-          {drop.mediaUrl ? (
-            <a href={drop.mediaUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-volt underline">
-              Open media ↗
-            </a>
-          ) : null}
+          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked label="" /> : null}
         </>
       ) : (
-        <p className="mt-2 text-sm text-muted">{drop.previewText ?? "Unlock to view."}</p>
+        <>
+          <p className="mt-2 text-sm text-muted">{drop.previewText ?? "Unlock to view."}</p>
+          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked={false} label="Unlock to see it sharp" /> : null}
+        </>
       )}
       {drop.quantityLimit ? (
         <p className="mt-1 text-xs text-muted">

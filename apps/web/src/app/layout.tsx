@@ -21,10 +21,10 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/draft", label: "Draft" },
   { href: "/live", label: "Live" },
+  { href: "/calls", label: "Calls" },
   { href: "/launching", label: "Launching" },
   { href: "/missions", label: "Missions" },
   { href: "/roster", label: "Roster" },
-  { href: "/scouts", label: "Scouts" },
   { href: "/crews", label: "Crews" },
   { href: "/famerace-100", label: "100" },
 ] as const;

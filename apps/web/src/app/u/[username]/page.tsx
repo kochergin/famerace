@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { DomainError, roster as rosterMod, safety } from "@famerace/core";
+import { calls as callsMod, DomainError, roster as rosterMod, safety } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { ReportForm } from "@/components/report";
 import { withErrorRedirect } from "@/lib/action";
@@ -50,6 +50,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   ]);
   if (!profile) notFound();
   const { user, taste, nominations, claimed, roster } = profile;
+  const callRecord = await callsMod.callRecord(user.id);
   const isSelf = viewer?.id === user.id;
   const crew = user.crewMemberships[0]?.crew;
   const blocked =
@@ -117,8 +118,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
       <div className="card mt-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <Stat label="Taste Score" value={taste?.score ?? 0} accent="text-lime" />
         <Stat label="Nominations" value={num(nominations)} accent="text-volt" />
-        <Stat label="Claimed from calls" value={num(claimed)} />
-        <Stat label="XP" value={num(user.xp)} />
+        <Stat label="Scout claims" value={num(claimed)} />
+        <Stat
+          label="Call record"
+          value={callRecord.wins + callRecord.losses > 0 ? `${callRecord.wins}W–${callRecord.losses}L` : "—"}
+          accent={callRecord.netPoints > 0 ? "text-lime" : undefined}
+        />
       </div>
 
       {user.badges.length > 0 ? (

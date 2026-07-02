@@ -121,6 +121,7 @@ export const postSchema = z.object({
   title: z.string().min(2).max(120),
   body: z.string().min(1).max(5000),
   preview: z.string().max(240).optional().or(z.literal("")),
+  mediaUrl: z.string().max(300).regex(/^(https?:\/\/|\/img\/)/).optional().or(z.literal("")),
   visibility: z.enum(["PUBLIC_PREVIEW", "MEMBERS", "HOLDERS"]).default("MEMBERS"),
 });
 
@@ -136,6 +137,7 @@ export async function createPost(userId: string, input: z.input<typeof postSchem
         title: data.title,
         body: data.body,
         preview: data.preview || null,
+        mediaUrl: data.mediaUrl || null,
         visibility: data.visibility,
       },
     });

@@ -16,7 +16,7 @@ export const dropSchema = z.object({
   title: z.string().min(2).max(120),
   description: z.string().min(10).max(2000),
   previewText: z.string().max(240).optional().or(z.literal("")),
-  mediaUrl: z.string().url().max(300).optional().or(z.literal("")),
+  mediaUrl: z.string().max(300).regex(/^(https?:\/\/|\/img\/)/).optional().or(z.literal("")),
   priceCents: z.number().int().min(100).max(1_000_000),
   quantityLimit: z.number().int().min(1).max(100_000).optional(),
 });

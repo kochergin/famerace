@@ -66,3 +66,25 @@ export async function storeAvatar(
 export async function getAsset(id: string) {
   return prisma.mediaAsset.findUnique({ where: { id } });
 }
+
+/**
+ * Store a content image (backstage post / drop media) and return its URL.
+ * Same validation as avatars; ownership stays with the uploading user.
+ */
+export async function storeMedia(
+  userId: string,
+  input: { bytes: Uint8Array; declaredMime?: string },
+  kind: "POST" | "DROP",
+): Promise<{ assetId: string; url: string }> {
+  if (input.bytes.length === 0) throw new DomainError("EMPTY_FILE", "That file is empty");
+  if (input.bytes.length > MAX_AVATAR_BYTES) {
+    throw new DomainError("FILE_TOO_LARGE", "Media must be 4MB or less");
+  }
+  const mime = sniffImageMime(input.bytes);
+  if (!mime) throw new DomainError("BAD_IMAGE", "Media must be a PNG, JPEG or WebP image");
+  const asset = await prisma.mediaAsset.create({
+    data: { ownerUserId: userId, kind, mime, bytes: Buffer.from(input.bytes) },
+    select: { id: true },
+  });
+  return { assetId: asset.id, url: `/img/${asset.id}` };
+}
