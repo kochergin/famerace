@@ -303,10 +303,16 @@ export default async function HomePage() {
             </section>
           ) : null}
           {user ? (
-            <Link href="/roster" className="card block p-4 text-center" style={{ "--glow": "rgb(255 61 141 / 0.3)" } as React.CSSProperties}>
-              <p className="display text-xl text-pink">My Roster →</p>
-              <p className="mt-1 text-xs text-muted">Your picks, your Taste Score, your proof.</p>
-            </Link>
+            <>
+              <Link href="/roster" className="card block p-4 text-center" style={{ "--glow": "rgb(255 61 141 / 0.3)" } as React.CSSProperties}>
+                <p className="display text-xl text-pink">My Roster →</p>
+                <p className="mt-1 text-xs text-muted">Your picks, your Taste Score, your proof.</p>
+              </Link>
+              <Link href="/recap" className="card spotlight block p-4 text-center" style={{ "--spot": "rgb(255 61 141 / 0.14)", "--glow": "rgb(255 61 141 / 0.3)" } as React.CSSProperties}>
+                <p className="display text-xl text-chalk">▶ Season Recap</p>
+                <p className="mt-1 text-xs text-muted">Your season so far — as a story. ~30s.</p>
+              </Link>
+            </>
           ) : null}
         </div>
       </div>

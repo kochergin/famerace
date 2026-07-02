@@ -45,6 +45,21 @@ export default async function RosterPage() {
         </a>
       </div>
 
+      <Link
+        href="/recap"
+        className="card mt-4 flex items-center justify-between gap-3 border-pink/40 p-4 transition hover:border-pink"
+        style={{ "--glow": "rgb(255 61 141 / 0.35)" } as React.CSSProperties}
+      >
+        <span className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-pink text-ink">▶</span>
+          <span>
+            <span className="display block text-xl text-pink">Play your Season Recap</span>
+            <span className="text-xs text-muted">Your calls, your rank, your receipts — as a story.</span>
+          </span>
+        </span>
+        <span className="stat text-xs uppercase tracking-widest text-muted">~30s</span>
+      </Link>
+
       <div className="card mt-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <Stat label="Creators backed" value={num(data.stats.backedCount)} accent="text-lime" />
         <Stat label="Genesis passes" value={num(data.stats.passCount)} accent="text-gold" />

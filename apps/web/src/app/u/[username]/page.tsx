@@ -83,6 +83,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
         {isSelf ? (
           <div className="flex items-center gap-2">
             <Link
+              href="/recap"
+              className="rounded border border-pink/50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-pink hover:bg-pink/10"
+            >
+              ▶ Recap
+            </Link>
+            <Link
               href="/settings"
               className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-muted hover:border-lime hover:text-lime"
             >
