@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CountUp } from "@/components/count-up";
 import { Confetti } from "@/components/confetti";
+import { LogoMark } from "@/components/logo";
 import { Monogram, gradientPair } from "@/components/monogram";
 import { RecapVideoButton } from "@/components/recap-video";
 
@@ -95,7 +96,9 @@ export function RecapStory({ slides, username }: { slides: RecapSlide[]; usernam
         ))}
       </div>
       <div className="flex items-center justify-between px-4 pt-3 text-xs uppercase tracking-widest text-muted">
-        <span className="display text-sm text-lime">FameRace · Season 1</span>
+        <span className="display inline-flex items-center gap-1.5 text-sm text-lime">
+          <LogoMark className="h-4 w-4" /> FameRace · Season 1
+        </span>
         <Link href="/roster" className="rounded px-2 py-1 hover:text-chalk" aria-label="Close recap">
           ✕
         </Link>

@@ -174,7 +174,8 @@ describe("roster + share cards", () => {
     for (const [template, subject, viewer] of cases) {
       const { svg } = await cardsMod.generateCard(template as never, subject, viewer);
       expect(svg, template).toContain("<svg");
-      expect(svg, template).toContain("FAMERACE");
+      // Brand wordmark is split for the two-tone treatment: FAME<tspan>RACE
+      expect(svg, template).toMatch(/FAME<tspan[^>]*>RACE<\/tspan>/);
     }
     expect(await prisma.shareCard.count()).toBe(cases.length);
   });

@@ -5,6 +5,7 @@ import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { copy, draftday, notify } from "@famerace/core";
 import { currentUser } from "@/lib/session";
 import { Countdown } from "@/components/countdown";
+import { Logo } from "@/components/logo";
 import { Monogram } from "@/components/monogram";
 import { NavLink } from "@/components/nav-link";
 import "./globals.css";
@@ -42,8 +43,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen antialiased">
         <header className="sticky top-0 z-40 border-b border-edge bg-ink/90 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-            <Link href="/" className="display text-2xl text-lime">
-              FameRace
+            <Link href="/" className="transition hover:opacity-85" aria-label="FameRace home">
+              <Logo />
             </Link>
             <nav className="hidden gap-4 text-sm font-semibold uppercase tracking-wide md:flex">
               {NAV.map((item) => (
@@ -140,6 +141,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </div>
         <footer className="border-t border-edge py-8 text-center text-xs text-muted">
+          <p className="mb-1 flex justify-center">
+            <Logo markClass="h-5 w-5" textClass="text-lg" />
+          </p>
           <p className="display text-lg text-chrome">{copy.tagline}</p>
           <p className="mt-2 mx-auto max-w-lg">{copy.footerLegal}</p>
           <p className="mt-2">
