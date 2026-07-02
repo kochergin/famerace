@@ -2,10 +2,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { claim, payouts as payoutsMod } from "@famerace/core";
 import { FormError } from "@/components/form-error";
+import { Sparkline } from "@/components/sparkline";
+import { prisma } from "@famerace/db";
 import { SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +49,19 @@ export default async function EarningsPage({
   const analytics = await payoutsMod.creatorAnalytics(creator.id);
   const streams = Object.entries(analytics.byStream).sort(([, a], [, b]) => (b ?? 0) - (a ?? 0));
 
+  // Daily earnings, last 14 days (CREATOR_EARNED credits, bucketed by day).
+  const since = new Date(Date.now() - 13 * 86_400_000);
+  since.setHours(0, 0, 0, 0);
+  const credits = await prisma.ledgerEntry.findMany({
+    where: { account: "CREATOR_EARNED", creatorId: creator.id, deltaCents: { gt: 0 }, tx: { createdAt: { gte: since } } },
+    include: { tx: { select: { createdAt: true } } },
+  });
+  const daily = Array.from({ length: 14 }, () => 0);
+  for (const entry of credits) {
+    const day = Math.floor((entry.tx.createdAt.getTime() - since.getTime()) / 86_400_000);
+    if (day >= 0 && day < 14) daily[day]! += entry.deltaCents;
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <FormError error={error} />
@@ -54,6 +70,22 @@ export default async function EarningsPage({
         <Stat label="Pending payouts" value={money(analytics.balances.pendingCents)} />
         <Stat label="Lifetime earned" value={money(analytics.balances.earnedCents)} accent="text-gold" />
       </div>
+
+      {daily.some((v) => v > 0) ? (
+        <section className="card mb-6 p-5">
+          <SectionTitle
+            right={
+              <a href={`/card/creator_revenue/${creator.handle}`} target="_blank" className="text-xs uppercase text-muted hover:text-gold">
+                Income card ↓
+              </a>
+            }
+          >
+            Last 14 days
+          </SectionTitle>
+          <Sparkline points={daily} width={640} height={64} className="w-full" />
+          <p className="mt-1 text-xs text-muted">Daily earnings across every stream — screenshot-ready proof.</p>
+        </section>
+      ) : null}
 
       <SectionTitle>Earnings by stream</SectionTitle>
       <div className="card p-6">
@@ -87,9 +119,9 @@ export default async function EarningsPage({
           required
           className="w-44 rounded border border-edge bg-ink px-3 py-2.5 text-sm text-chalk placeholder:text-muted focus:border-lime focus:outline-none"
         />
-        <button className="rounded bg-lime px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Withdraw
-        </button>
+        </SubmitButton>
         <p className="w-full text-xs text-muted">
           Payouts of $1,000+ route through compliance review before sending.
         </p>

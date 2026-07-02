@@ -187,7 +187,7 @@ export async function menuFor(creatorId: string) {
 export async function ordersForCreator(creatorId: string) {
   return prisma.requestOrder.findMany({
     where: { item: { creatorId } },
-    include: { item: { select: { title: true, priceCents: true } }, user: { select: { username: true } } },
+    include: { item: { select: { title: true, priceCents: true } }, user: { select: { username: true, avatarUrl: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });

@@ -510,3 +510,11 @@ body::after {
     opacity: 0;
   }
 }
+
+/* SubmitButton pending spinner */
+@keyframes spin-dot {
+  to { transform: rotate(360deg); }
+}
+.spin-dot {
+  animation: spin-dot 700ms linear infinite;
+}

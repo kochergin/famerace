@@ -12,6 +12,7 @@ import { ClaimKit } from "@/components/claim-kit";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
 import { ShareRow } from "@/components/share";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -184,15 +185,15 @@ export default async function DraftProfilePage({
         <div className="mt-4 flex flex-wrap gap-2">
           <form action={inviteAction}>
             <input type="hidden" name="id" value={profile.id} />
-            <button className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
+            <SubmitButton pendingLabel="Recording…" className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
               {copy.cta.invite(profile.nameOrHandle)}
-            </button>
+            </SubmitButton>
           </form>
           <form action={watchAction}>
             <input type="hidden" name="id" value={profile.id} />
-            <button className="rounded border border-edge px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:border-lime">
+            <SubmitButton pendingLabel="Adding…" className="rounded border border-edge px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:border-lime">
               {copy.cta.addToRoster}
-            </button>
+            </SubmitButton>
           </form>
           {!claimed ? (
             <Link

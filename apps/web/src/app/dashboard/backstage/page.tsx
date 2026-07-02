@@ -7,6 +7,7 @@ import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -137,9 +138,9 @@ export default async function DashboardBackstagePage({
             <input name="minHoldingUnits" type="number" min={0} placeholder="Min units (holder-gated)" className={inputClass} />
           </div>
           <textarea name="benefits" placeholder={"Benefits, one per line"} rows={2} className={inputClass} />
-          <button className="rounded bg-velvet px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
+          <SubmitButton pendingLabel="Working…" className="rounded bg-velvet px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
             Add tier
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -157,9 +158,9 @@ export default async function DashboardBackstagePage({
           <option value="HOLDERS">Holders only</option>
           <option value="PUBLIC_PREVIEW">Public</option>
         </select>
-        <button className="rounded bg-velvet px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-velvet px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
           Publish post
-        </button>
+        </SubmitButton>
       </form>
       {posts.length > 0 ? (
         <ul className="mb-6 space-y-1 text-sm text-muted">
@@ -185,9 +186,9 @@ export default async function DashboardBackstagePage({
           <input name="price" type="number" min={1} step="0.01" placeholder="Price $" required className={inputClass} />
           <input name="quantityLimit" type="number" min={1} placeholder="Quantity limit (optional)" className={inputClass} />
         </div>
-        <button className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Release drop
-        </button>
+        </SubmitButton>
       </form>
       {drops.length > 0 ? (
         <ul className="mt-3 space-y-1 text-sm text-muted">

@@ -4,6 +4,7 @@ import { users } from "@famerace/core";
 import { withErrorRedirect } from "@/lib/action";
 import { FormError } from "@/components/form-error";
 import { setSessionCookie } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 async function loginAction(formData: FormData) {
   "use server";
@@ -33,12 +34,12 @@ export default async function LoginPage({
         <FormError error={params.error} />
         <input name="identifier" placeholder="Username or email" required className={inputClass} />
         <input name="password" type="password" placeholder="Password" required className={inputClass} />
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Signing in…"
           className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110"
         >
           Sign in
-        </button>
+        </SubmitButton>
       </form>
       <p className="mt-4 text-sm text-muted">
         New here?{" "}

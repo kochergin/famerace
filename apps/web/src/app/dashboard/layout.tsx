@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { NavLink } from "@/components/nav-link";
 
 const TABS = [
   { href: "/dashboard", label: "Launch" },
@@ -13,11 +13,14 @@ const TABS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
-      <nav className="mb-6 flex gap-2 overflow-x-auto border-b border-edge pb-2 text-sm font-bold uppercase tracking-wide">
+      <nav
+        className="mb-6 flex gap-2 overflow-x-auto border-b border-edge pb-2 text-xs font-bold uppercase tracking-wide"
+        style={{ maskImage: "linear-gradient(90deg, black 90%, transparent)" }}
+      >
         {TABS.map((tab) => (
-          <Link key={tab.href} href={tab.href} className="rounded px-3 py-1.5 text-muted transition hover:bg-panel hover:text-chalk">
-            {tab.label}
-          </Link>
+          <NavLink key={tab.href} href={tab.href}>
+            <span className="chip whitespace-nowrap border border-edge px-3 py-1.5 transition hover:border-chrome">{tab.label}</span>
+          </NavLink>
         ))}
       </nav>
       {children}

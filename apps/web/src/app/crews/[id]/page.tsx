@@ -7,6 +7,7 @@ import { SectionTitle, Stat } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { num } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -81,13 +82,13 @@ export default async function CrewPage({
       {user ? (
         <form action={isMember ? leaveAction : joinAction} className="mt-4">
           <input type="hidden" name="crewId" value={crew.id} />
-          <button
+          <SubmitButton pendingLabel="Working…"
             className={`rounded px-4 py-2 text-sm font-bold uppercase tracking-wide ${
               isMember ? "border border-edge text-muted hover:border-pink hover:text-pink" : "bg-volt text-chalk hover:brightness-110"
             }`}
           >
             {isMember ? "Leave crew" : "Join crew"}
-          </button>
+          </SubmitButton>
         </form>
       ) : null}
 

@@ -6,6 +6,7 @@ import { prisma } from "@famerace/db";
 import { SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { currentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 async function submitQuestAction(formData: FormData) {
   "use server";
@@ -75,9 +76,9 @@ export async function StreetTeamSection({ creatorId, handle }: { creatorId: stri
                     required={quest.proofType !== "AUTO"}
                     className="min-w-0 flex-1 rounded border border-edge bg-ink px-3 py-1.5 text-xs text-chalk placeholder:text-muted focus:border-volt focus:outline-none"
                   />
-                  <button className="rounded bg-volt px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-chalk">
+                  <SubmitButton pendingLabel="…" className="rounded bg-volt px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-chalk">
                     Submit
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : (
                 <Link href="/join" className="mt-2 inline-block text-xs text-volt underline">

@@ -4,6 +4,7 @@ import { copy, users } from "@famerace/core";
 import { withErrorRedirect } from "@/lib/action";
 import { FormError } from "@/components/form-error";
 import { setSessionCookie } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 async function joinAction(formData: FormData) {
   "use server";
@@ -68,12 +69,12 @@ export default async function JoinPage({
           <input type="checkbox" name="dobAttested18" required className="mt-1 accent-lime" />
           I confirm I am 18 or older.
         </label>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Setting up your wallet…"
           className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110"
         >
           Create account
-        </button>
+        </SubmitButton>
       </form>
       <p className="mt-4 text-sm text-muted">
         Already drafted?{" "}

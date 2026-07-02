@@ -4,6 +4,7 @@ import { FormError } from "@/components/form-error";
 import { withErrorRedirect } from "@/lib/action";
 import { CATEGORY_LABELS } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 async function nominateAction(formData: FormData) {
   "use server";
@@ -66,12 +67,12 @@ export default async function NominatePage({
           placeholder="Mission you want to fund (e.g. First Music Video)"
           className={inputClass}
         />
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Drafting them…"
           className="w-full rounded bg-volt px-4 py-3 font-bold uppercase tracking-wide text-chalk hover:brightness-110"
         >
           Add to the Draft
-        </button>
+        </SubmitButton>
         <p className="text-xs text-muted">
           Prohibited: minors, private persons, and anything on the prohibited-categories list.
           Nominations are reviewed before appearing on the public board.

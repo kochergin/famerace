@@ -194,6 +194,7 @@ enum LedgerTxType {
   MESSAGE_FEE
   PAYOUT
   REFUND
+  ADVANCE
   MATCH_FUND
   FEE
 }
@@ -208,6 +209,7 @@ enum LedgerAccount {
   PLATFORM_FEES
   SCOUT_REWARDS
   MATCH_FUND
+  ADVANCE_POOL
 }
 
 // Backstage (PRD §9.7)
@@ -1387,6 +1389,18 @@ model CallStake {
 
   @@unique([callId, userId])
   @@index([userId, settled])
+}
+
+// ───────────────────────── creator advance ─────────────────────────
+
+// "Claim & get paid today": an instant advance against authorized pledged
+// demand, repaid automatically out of future earnings before any payout.
+model CreatorAdvance {
+  id          String   @id @default(cuid())
+  creatorId   String   @unique
+  amountCents Int
+  repaidCents Int      @default(0)
+  createdAt   DateTime @default(now())
 }
 
 // ───────────────────────── wallet (USDC rail) ─────────────────────────

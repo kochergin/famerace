@@ -8,6 +8,7 @@ import { FuelBar, RiskDisclosure, SectionCard, SectionTitle } from "@/components
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 // ── server actions ──
 
@@ -244,9 +245,9 @@ function TierCard({ tier, handle, signedIn }: { tier: BackstageTier; handle: str
         <form action={subscribeAction} className="mt-3">
           <input type="hidden" name="handle" value={handle} />
           <input type="hidden" name="tierId" value={tier.id} />
-          <button className="w-full rounded bg-velvet px-3 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
+          <SubmitButton pendingLabel="Joining…" className="w-full rounded bg-velvet px-3 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-125">
             {copy.cta.joinBackstage}
-          </button>
+          </SubmitButton>
         </form>
       ) : (
         <Link href="/join" className="mt-3 block rounded bg-velvet px-3 py-2 text-center text-sm font-bold uppercase tracking-wide text-chalk">
@@ -316,9 +317,9 @@ function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: strin
           <form action={buyDropAction} className="mt-3">
             <input type="hidden" name="handle" value={handle} />
             <input type="hidden" name="dropId" value={drop.id} />
-            <button className="w-full rounded bg-lime px-3 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+            <SubmitButton pendingLabel="Funding…" className="w-full rounded bg-lime px-3 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
               Unlock
-            </button>
+            </SubmitButton>
           </form>
         ) : (
           <Link href="/join" className="mt-3 block rounded border border-edge px-3 py-2 text-center text-sm font-bold uppercase text-muted">
@@ -352,9 +353,9 @@ export function TipBox({ creatorId, handle, signedIn }: { creatorId: string; han
           maxLength={200}
           className="min-w-40 flex-1 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk placeholder:text-muted focus:border-pink focus:outline-none"
         />
-        <button className="rounded bg-pink px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+        <SubmitButton pendingLabel="Unlocking…" className="rounded bg-pink px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Tip
-        </button>
+        </SubmitButton>
       </form>
       <p className="mt-2 text-xs text-muted">90% goes to the creator.</p>
     </SectionCard>

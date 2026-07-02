@@ -8,6 +8,7 @@ import { EmptyState, FuelBar, SectionTitle, Stat } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -67,15 +68,15 @@ export default async function LaunchingPage() {
                 <span className="flex gap-2">
                   <form action={confirmAction}>
                     <input type="hidden" name="orderId" value={order.id} />
-                    <button className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">
+                    <SubmitButton pendingLabel="Confirming…" className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">
                       Confirm
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={declineAction}>
                     <input type="hidden" name="orderId" value={order.id} />
-                    <button className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
+                    <SubmitButton pendingLabel="Releasing…" className="rounded border border-edge px-3 py-1.5 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
                       Decline
-                    </button>
+                    </SubmitButton>
                   </form>
                 </span>
               </div>

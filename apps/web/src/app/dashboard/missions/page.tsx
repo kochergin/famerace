@@ -7,6 +7,7 @@ import { FuelBar, SectionTitle, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -114,9 +115,9 @@ export default async function DashboardMissionsPage({
           <option value="ALL_OR_NOTHING">All-or-nothing — full refund if the goal is missed</option>
           <option value="KEEP_WHAT_RAISED">Keep what's raised at the deadline</option>
         </select>
-        <button className="w-full rounded bg-gold px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
+        <SubmitButton pendingLabel="Working…" className="w-full rounded bg-gold px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Submit for review
-        </button>
+        </SubmitButton>
       </form>
 
       <SectionTitle>Your missions</SectionTitle>
@@ -144,9 +145,9 @@ export default async function DashboardMissionsPage({
               {mission.status === "FUNDED" || mission.status === "PARTIALLY_FUNDED" ? (
                 <form action={startWorkAction} className="mt-3">
                   <input type="hidden" name="missionId" value={mission.id} />
-                  <button className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
+                  <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
                     Start the work — release escrow
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : null}
               {mission.status === "IN_PROGRESS" ? (
@@ -156,15 +157,15 @@ export default async function DashboardMissionsPage({
                     <input name="title" placeholder="Update title" required className={inputClass} />
                     <textarea name="body" placeholder="What happened? Backers see this." required minLength={10} rows={2} className={inputClass} />
                     <input name="proofUrl" type="url" placeholder="Proof link (required to complete the mission)" className={inputClass} />
-                    <button className="rounded border border-edge px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:border-gold">
+                    <SubmitButton pendingLabel="Working…" className="rounded border border-edge px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:border-gold">
                       Post update
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={completeAction}>
                     <input type="hidden" name="missionId" value={mission.id} />
-                    <button className="rounded bg-gold px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
+                    <SubmitButton pendingLabel="Working…" className="rounded bg-gold px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
                       Mark completed
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : null}

@@ -2,6 +2,8 @@ import { prisma, type LedgerTxType } from "@famerace/db";
 import { DomainError, notFound } from "../errors";
 import { audit } from "../statemachine";
 import { balance, postLedgerTx } from "./ledger";
+import * as advanceMod from "./advance";
+import { moneyTx } from "../tx";
 
 // Creator payouts + analytics (PRD §7.7, §9.20). Available balance is the
 // CREATOR_EARNED ledger balance; payouts debit it through a review pipeline.
@@ -22,15 +24,28 @@ export async function requestPayout(userId: string, amountCents: number) {
   if (!Number.isInteger(amountCents) || amountCents < 1_000) {
     throw new DomainError("BAD_AMOUNT", "Minimum payout is $10");
   }
+  const creatorRow = await prisma.creator.findFirst({ where: { userId } });
+  if (!creatorRow) throw notFound("Creator profile");
+  if (creatorRow.payoutStatus !== "ACTIVE") {
+    throw new DomainError("PAYOUT_NOT_CONFIGURED", "Activate payouts in your dashboard first");
+  }
+  // Outstanding advance clears from earnings FIRST, in its own committed
+  // transaction — a rejected payout request must not roll the repayment back.
+  const pre = await creatorBalances(creatorRow.id);
+  const repaid =
+    pre.availableCents > 0
+      ? await moneyTx((tx) => advanceMod.repayFromEarnings(tx, creatorRow.id, pre.availableCents))
+      : 0;
   return prisma.$transaction(async (tx) => {
-    const creator = await tx.creator.findFirst({ where: { userId } });
-    if (!creator) throw notFound("Creator profile");
-    if (creator.payoutStatus !== "ACTIVE") {
-      throw new DomainError("PAYOUT_NOT_CONFIGURED", "Activate payouts in your dashboard first");
-    }
-    const balances = await creatorBalances(creator.id);
-    if (amountCents > balances.availableCents) {
-      throw new DomainError("INSUFFICIENT_BALANCE", "Amount exceeds your available balance");
+    const creator = creatorRow;
+    const availableCents = pre.availableCents - repaid;
+    if (amountCents > availableCents) {
+      throw new DomainError(
+        "INSUFFICIENT_BALANCE",
+        repaid > 0
+          ? `$${(repaid / 100).toFixed(2)} cleared your advance first — $${(availableCents / 100).toFixed(2)} available`
+          : "Amount exceeds your available balance",
+      );
     }
     // High-value payouts route through compliance review (PRD §9.21, §15.8).
     const needsReview = amountCents >= 100_000;

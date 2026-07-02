@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Call } from "@famerace/db";
 import { Countdown } from "@/components/countdown";
 import { Monogram } from "@/components/monogram";
+import { StakeButton } from "@/components/submit-button";
 import { num } from "@/lib/format";
 
 /* A call: the screenshot object. Question, the internet's number, deadline,
@@ -77,20 +78,8 @@ export function CallCard({
             className="w-20 rounded border border-edge bg-ink px-2.5 py-1.5 text-sm text-chalk focus:border-lime focus:outline-none"
             title="Taste Points to stake"
           />
-          <button
-            name="side"
-            value="YES"
-            className="rounded bg-lime px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-ink hover:brightness-110"
-          >
-            Yes
-          </button>
-          <button
-            name="side"
-            value="NO"
-            className="rounded bg-pink px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-ink hover:brightness-110"
-          >
-            No
-          </button>
+          <StakeButton side="YES" />
+          <StakeButton side="NO" />
           {typeof myPoints === "number" ? (
             <span className="stat text-xs text-muted">{num(myPoints)} pts available</span>
           ) : null}

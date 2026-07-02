@@ -7,6 +7,7 @@ import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -107,9 +108,9 @@ export default async function StreetTeamDashboard({
           <input name="rewardAmount" type="number" min={1} max={1000} defaultValue={25} className={inputClass} />
           <input name="maxCompletions" type="number" min={1} placeholder="Max (opt.)" className={inputClass} />
         </div>
-        <button className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
           Post quest
-        </button>
+        </SubmitButton>
       </form>
 
       <SectionTitle>Review submissions ({pending.length})</SectionTitle>
@@ -138,14 +139,14 @@ export default async function StreetTeamDashboard({
                 <form action={reviewAction}>
                   <input type="hidden" name="completionId" value={completion.id} />
                   <input type="hidden" name="decision" value="APPROVED" />
-                  <button className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">Approve</button>
+                  <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">Approve</SubmitButton>
                 </form>
                 <form action={reviewAction}>
                   <input type="hidden" name="completionId" value={completion.id} />
                   <input type="hidden" name="decision" value="REJECTED" />
-                  <button className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
+                  <SubmitButton pendingLabel="Working…" className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
                     Reject
-                  </button>
+                  </SubmitButton>
                 </form>
               </span>
             </div>

@@ -3,11 +3,13 @@ import Link from "next/link";
 import { unstable_ViewTransition as ViewTransition } from "react";
 import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { copy, draftday, notify } from "@famerace/core";
+import { prisma } from "@famerace/db";
 import { currentUser } from "@/lib/session";
 import { Countdown } from "@/components/countdown";
 import { Logo } from "@/components/logo";
 import { Monogram } from "@/components/monogram";
 import { NavLink } from "@/components/nav-link";
+import { TabBar } from "@/components/tab-bar";
 import "./globals.css";
 
 const display = Archivo_Black({ weight: "400", subsets: ["latin"], variable: "--font-display-web" });
@@ -33,9 +35,12 @@ const NAV = [
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   const isAdmin = user?.roles.some((r) => r === "ADMIN" || r === "MODERATOR");
-  const [unread, draftDay] = await Promise.all([
+  const [unread, draftDay, creatorFace] = await Promise.all([
     user ? notify.unreadCount(user.id) : 0,
     draftday.draftDayInfo(),
+    user?.roles.includes("CREATOR")
+      ? prisma.creator.findFirst({ where: { userId: user.id }, select: { avatarUrl: true } })
+      : null,
   ]);
 
   return (
@@ -62,7 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {user ? (
                 <>
                   {user.roles.includes("CREATOR") ? (
-                    <Link href="/dashboard" className="font-semibold text-chrome hover:text-chalk">
+                    <Link href="/dashboard" className="hidden font-semibold text-chrome hover:text-chalk sm:block">
                       Dashboard
                     </Link>
                   ) : null}
@@ -89,7 +94,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     ) : null}
                   </Link>
                   <Link href={`/u/${user.username}`} className="flex items-center gap-2 font-semibold text-chalk transition hover:text-lime">
-                    <Monogram name={user.username} src={user.avatarUrl} size="sm" />
+                    <Monogram name={user.username} src={creatorFace?.avatarUrl ?? user.avatarUrl} size="sm" />
                     <span className="hidden sm:inline">@{user.username}</span>
                   </Link>
                 </>
@@ -108,13 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               )}
             </div>
           </div>
-          <nav className="flex gap-4 overflow-x-auto px-4 pb-2 text-xs font-semibold uppercase tracking-wide md:hidden" style={{ maskImage: "linear-gradient(90deg, black 88%, transparent)" }}>
-            {NAV.map((item) => (
-              <NavLink key={item.href} href={item.href}>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          
         </header>
         {/* Draft Day strip: the whole app counts down to the same moment */}
         {draftDay.state === "before" && draftDay.draftDayAt ? (
@@ -134,7 +133,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             Draft Day is live — the board is revealing now →
           </Link>
         ) : null}
-        <main className="mx-auto max-w-6xl px-4 py-6">
+        <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-6">
           <ViewTransition>{children}</ViewTransition>
         </main>
         {/* The chant — giant outlined type rolling past like arena signage */}
@@ -159,6 +158,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
           </p>
         </footer>
+        <TabBar
+          homeHref={user?.roles.includes("CREATOR") ? "/dashboard" : "/"}
+          homeLabel={user?.roles.includes("CREATOR") ? "HQ" : "Home"}
+        />
       </body>
     </html>
   );

@@ -8,6 +8,7 @@ import { Banner, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +73,9 @@ export default async function WalletPage({
         <p className="mt-2 text-xs text-muted">Spends instantly everywhere on FameRace. No gas, ever.</p>
         {faucetOn ? (
           <form action={faucetAction} className="mt-4">
-            <button className="rounded bg-lime px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+            <SubmitButton pendingLabel="Funding…" className="rounded bg-lime px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
               + Add $100 (demo)
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>
@@ -104,9 +105,9 @@ export default async function WalletPage({
               required
               className="min-w-0 flex-1 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk focus:border-lime focus:outline-none"
             />
-            <button className="rounded border border-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-lime hover:bg-lime/10">
+            <SubmitButton pendingLabel="Sending…" className="rounded border border-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-lime hover:bg-lime/10">
               Send
-            </button>
+            </SubmitButton>
           </form>
         ) : (
           <p className="text-sm text-muted">

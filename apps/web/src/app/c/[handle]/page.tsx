@@ -22,6 +22,7 @@ import { Monogram } from "@/components/monogram";
 import { Countdown } from "@/components/countdown";
 import { Sparkline } from "@/components/sparkline";
 import { Banner } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -400,9 +401,9 @@ export default async function CreatorPage({
                     required
                     className="w-28 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk placeholder:text-muted focus:border-pink focus:outline-none"
                   />
-                  <button className="rounded border border-pink/60 px-4 py-2 text-sm font-bold uppercase tracking-wide text-pink hover:bg-pink/10">
+                  <SubmitButton pendingLabel="Selling…" className="rounded border border-pink/60 px-4 py-2 text-sm font-bold uppercase tracking-wide text-pink hover:bg-pink/10">
                     Sell to curve
-                  </button>
+                  </SubmitButton>
                 </div>
               </form>
             ) : null}

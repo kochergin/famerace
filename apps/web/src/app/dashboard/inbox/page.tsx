@@ -6,6 +6,8 @@ import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
+import { Monogram } from "@/components/monogram";
 
 export const dynamic = "force-dynamic";
 
@@ -89,11 +91,14 @@ export default async function InboxPage({
         <div className="card mb-6 divide-y divide-edge">
           {inbox.map((message) => (
             <div key={message.id} className="px-4 py-3 text-sm">
-              <div className="flex items-baseline justify-between gap-2">
-                <span>
-                  <span className="stat font-bold text-gold">{money(message.priceCents)}</span>{" "}
-                  <span className="font-semibold text-volt">@{message.fromUser.username}</span>{" "}
-                  <span className="text-xs text-muted">{timeAgo(message.createdAt)}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <Monogram name={message.fromUser.username} src={message.fromUser.avatarUrl} size="sm" />
+                  <span className="min-w-0">
+                    <span className="font-semibold text-chalk">@{message.fromUser.username}</span>{" "}
+                    <span className="stat font-bold text-gold">paid {money(message.priceCents)}</span>{" "}
+                    <span className="text-xs text-muted">to reach you · {timeAgo(message.createdAt)}</span>
+                  </span>
                 </span>
                 <span className="chip bg-edge text-muted">{message.status}</span>
               </div>
@@ -108,15 +113,15 @@ export default async function InboxPage({
                       required
                       className={`flex-1 ${inputClass}`}
                     />
-                    <button className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">
+                    <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">
                       Respond
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={rejectAction}>
                     <input type="hidden" name="messageId" value={message.id} />
-                    <button className="text-xs text-muted underline hover:text-pink">
+                    <SubmitButton pendingLabel="Working…" className="text-xs text-muted underline hover:text-pink">
                       Decline &amp; refund
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : message.response ? (
@@ -132,9 +137,9 @@ export default async function InboxPage({
         <input name="title" placeholder="Item (e.g. Private listening party)" required className={`min-w-52 flex-1 ${inputClass}`} />
         <input name="price" type="number" min={10} placeholder="$" required className={`w-24 ${inputClass}`} />
         <input name="deliveryDays" type="number" min={1} max={60} defaultValue={7} className={`w-20 ${inputClass}`} title="Delivery days" />
-        <button className="rounded bg-gold px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-gold px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink">
           Add item
-        </button>
+        </SubmitButton>
       </form>
 
       {orders.length === 0 ? (
@@ -143,12 +148,15 @@ export default async function InboxPage({
         <div className="card divide-y divide-edge">
           {orders.map((order) => (
             <div key={order.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-              <span>
+              <span className="flex min-w-0 items-center gap-2.5">
+                <Monogram name={order.user.username} src={order.user.avatarUrl} size="sm" />
+                <span className="min-w-0">
                 <span className="font-semibold text-chalk">{order.item.title}</span>{" "}
                 <span className="text-muted">
                   · {money(order.item.priceCents)} · @{order.user.username} · {timeAgo(order.createdAt)}
                 </span>{" "}
                 <span className="chip bg-edge text-muted">{order.status}</span>
+                </span>
               </span>
               {order.status === "REQUESTED" || order.status === "ACCEPTED" ? (
                 <span className="flex gap-2">
@@ -156,24 +164,24 @@ export default async function InboxPage({
                     <form action={requestAction}>
                       <input type="hidden" name="orderId" value={order.id} />
                       <input type="hidden" name="decision" value="accept" />
-                      <button className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-chalk hover:border-lime">
+                      <SubmitButton pendingLabel="Working…" className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-chalk hover:border-lime">
                         Accept
-                      </button>
+                      </SubmitButton>
                     </form>
                   ) : null}
                   <form action={requestAction}>
                     <input type="hidden" name="orderId" value={order.id} />
                     <input type="hidden" name="decision" value="deliver" />
-                    <button className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">
+                    <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">
                       Delivered
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={requestAction}>
                     <input type="hidden" name="orderId" value={order.id} />
                     <input type="hidden" name="decision" value="refund" />
-                    <button className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
+                    <SubmitButton pendingLabel="Working…" className="rounded border border-edge px-3 py-1 text-xs font-bold uppercase text-muted hover:border-pink hover:text-pink">
                       Refund
-                    </button>
+                    </SubmitButton>
                   </form>
                 </span>
               ) : null}

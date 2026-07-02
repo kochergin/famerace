@@ -6,6 +6,7 @@ import { SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 async function sendMessageAction(formData: FormData) {
   "use server";
@@ -77,9 +78,9 @@ export function PaidMessageBox({
             className="w-24 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk focus:border-volt focus:outline-none"
             title="Price in dollars"
           />
-          <button className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
+          <SubmitButton pendingLabel="Sending…" className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
             Send paid message
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </SectionCard>
@@ -114,9 +115,9 @@ export async function RequestMenuSection({
               <form action={orderRequestAction} className="mt-3">
                 <input type="hidden" name="handle" value={handle} />
                 <input type="hidden" name="itemId" value={item.id} />
-                <button className="w-full rounded bg-gold px-3 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+                <SubmitButton pendingLabel="Placing…" className="w-full rounded bg-gold px-3 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
                   Request
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <Link href="/join" className="mt-3 block rounded border border-edge px-3 py-2 text-center text-sm font-bold uppercase text-muted">

@@ -1,16 +1,31 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { claim, copy } from "@famerace/core";
+import { advance as advanceMod, claim, copy } from "@famerace/core";
+import { prisma } from "@famerace/db";
 import { AvatarUpload } from "@/components/avatar-upload";
-import { Confetti } from "@/components/confetti";
+import { ClaimCeremony } from "@/components/claim-ceremony";
 import { FormError } from "@/components/form-error";
+import { Monogram } from "@/components/monogram";
 import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
+
+async function advanceAction() {
+  "use server";
+  const user = await requireCurrentUser();
+  let cents = 0;
+  await withErrorRedirect("/dashboard", async () => {
+    const row = await advanceMod.takeAdvance(user.id);
+    cents = row.amountCents;
+  });
+  revalidatePath("/dashboard");
+  redirect(`/dashboard?advanced=${cents}`);
+}
 
 async function verifyAction(formData: FormData) {
   "use server";
@@ -74,9 +89,9 @@ const inputClass =
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; claimed?: string }>;
+  searchParams: Promise<{ error?: string; claimed?: string; advanced?: string }>;
 }) {
-  const { error, claimed } = await searchParams;
+  const { error, claimed, advanced } = await searchParams;
   const user = await requireCurrentUser().catch(() => null);
   if (!user) redirect("/login");
   const creator = await claim.creatorForUser(user.id);
@@ -102,6 +117,56 @@ export default async function DashboardPage({
   const perksCount = Array.isArray(creator.perks) ? creator.perks.length : 0;
   const missionReady = creator.missions.some((m) => m.status === "UNDER_REVIEW" || m.status === "LIVE");
 
+  const [advState, passes, tips, dropBuys, contribs, lastPost, memberCount] = await Promise.all([
+    advanceMod.advanceStatus(creator.id),
+    prisma.genesisPass.findMany({
+      where: { creatorId: creator.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { user: { select: { username: true, avatarUrl: true } } },
+    }),
+    prisma.tip.findMany({
+      where: { creatorId: creator.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { fromUser: { select: { username: true, avatarUrl: true } } },
+    }),
+    prisma.dropPurchase.findMany({
+      where: { drop: { creatorId: creator.id } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { user: { select: { username: true, avatarUrl: true } }, drop: { select: { title: true } } },
+    }),
+    prisma.missionContribution.findMany({
+      where: { mission: { creatorId: creator.id }, refunded: false },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { user: { select: { username: true, avatarUrl: true } }, mission: { select: { title: true } } },
+    }),
+    prisma.backstagePost.findFirst({
+      where: { creatorId: creator.id, status: "PUBLISHED" },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    }),
+    prisma.backstageMembership.count({ where: { creatorId: creator.id, status: "ACTIVE" } }),
+  ]);
+
+  const race = [
+    ...passes.map((x) => ({ at: x.createdAt, user: x.user, label: `Genesis Pass · #${x.backerNumber}`, cents: x.tierCents })),
+    ...tips.map((x) => ({ at: x.createdAt, user: x.fromUser, label: "Tip", cents: x.amountCents })),
+    ...dropBuys.map((x) => ({ at: x.createdAt, user: x.user, label: `Drop · ${x.drop.title}`, cents: x.priceCents })),
+    ...contribs.map((x) => ({ at: x.createdAt, user: x.user, label: `Mission · ${x.mission.title}`, cents: x.amountCents })),
+  ]
+    .sort((a, b) => b.at.getTime() - a.at.getTime())
+    .slice(0, 6);
+
+  const staleDays = lastPost ? Math.floor((Date.now() - lastPost.createdAt.getTime()) / 86_400_000) : 99;
+  const nextMove = !creator.avatarUrl
+    ? { text: "Upload your face — pages with a face convert visitors into backers.", href: "#face", cta: "Upload above ↑" }
+    : staleDays >= 3 && memberCount > 0
+      ? { text: `${num(memberCount)} Backstage members have not heard from you in ${staleDays === 99 ? "a while" : `${staleDays} days`}.`, href: "/dashboard/backstage", cta: "Post now →" }
+      : { text: "Your numbers are proof. Post the income card where your people are.", href: `/card/creator_revenue/${creator.handle}`, cta: "Get the card ↓" };
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-start justify-between">
@@ -113,10 +178,88 @@ export default async function DashboardPage({
         </div>
         <StatusChip status={creator.status} />
       </div>
-      {claimed ? <Confetti fireKey="claimed" /> : null}
+      {claimed ? (
+        <ClaimCeremony
+          name={creator.displayName}
+          fans={creator.draftProfile?.fanCount ?? 0}
+          pledgedLabel={money(creator.draftProfile?.pledgedDemandTotal ?? 0, { compact: true })}
+          draftId={creator.draftProfileId}
+          handle={creator.handle}
+        />
+      ) : null}
       <FormError error={error} />
 
-      <div className="card mt-4 p-5">
+      {advanced ? (
+        <div className="card spotlight story-in mt-4 border-lime/40 p-5" style={{ "--spot": "rgb(201 247 58 / 0.16)" } as React.CSSProperties}>
+          <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted">Season advance · sent</p>
+          <p className="display mt-1 text-3xl">
+            <span className="text-lime">{money(Number(advanced))}</span> just landed in your wallet.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Repays itself out of future earnings — nothing to do. Now go give them a show.
+          </p>
+        </div>
+      ) : null}
+
+      {/* The headline moment: money against demand that already believes in you */}
+      {advState.eligibleCents > 0 ? (
+        <div className="card spotlight mt-4 border-lime/50 p-6" style={{ "--spot": "rgb(201 247 58 / 0.18)" } as React.CSSProperties}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted">Season advance · yours today</p>
+              <p className="display mt-1 text-5xl text-lime">{money(advState.eligibleCents)}</p>
+              <p className="mt-1 max-w-sm text-xs text-muted">
+                An instant advance against the {money(advState.demandCents, { compact: true })} your fans
+                already pledged. Repaid automatically from future earnings. No forms, no waiting.
+              </p>
+            </div>
+            <form action={advanceAction}>
+              <SubmitButton
+                pendingLabel="Sending to your wallet…"
+                className="rounded bg-lime px-6 py-3 font-bold uppercase tracking-wide text-ink shadow-[0_0_24px_rgba(201,247,58,0.35)] hover:brightness-110"
+              >
+                Get paid today →
+              </SubmitButton>
+            </form>
+          </div>
+        </div>
+      ) : advState.taken ? (
+        <p className="chip mt-4 border border-edge text-muted">
+          Season advance {money(advState.taken.amountCents)} · repaid {money(advState.taken.repaidCents)}
+        </p>
+      ) : null}
+
+      {/* Next best move — one thing, not a dashboard of guilt */}
+      <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 border-volt/40 p-4">
+        <p className="text-sm text-chalk">
+          <span className="stat mr-2 text-[10px] uppercase tracking-[0.25em] text-volt">Next move</span>
+          {nextMove.text}
+        </p>
+        <a href={nextMove.href} target={nextMove.href.startsWith("/card") ? "_blank" : undefined} className="shrink-0 rounded border border-volt px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-volt hover:bg-volt/10">
+          {nextMove.cta}
+        </a>
+      </div>
+
+      {/* The race: your people, with faces */}
+      {race.length > 0 ? (
+        <section className="card mt-4 p-5">
+          <SectionTitle>Your race right now</SectionTitle>
+          <ul className="space-y-2">
+            {race.map((event, index) => (
+              <li key={index} className="feed-in flex items-center gap-3 text-sm">
+                <Monogram name={event.user.username} src={event.user.avatarUrl} size="sm" />
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="font-semibold text-chalk">@{event.user.username}</span>{" "}
+                  <span className="text-muted">· {event.label}</span>
+                </span>
+                <span className="stat font-bold text-lime">+{money(event.cents)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <div className="card mt-4 p-5" id="face">
         <AvatarUpload
           target="creator"
           name={creator.displayName}
@@ -211,9 +354,9 @@ export default async function DashboardPage({
               <input type="checkbox" name="termsAccepted" required className="mt-0.5 accent-lime" />
               {copy.creatorTermsSummary}
             </label>
-            <button className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
+            <SubmitButton pendingLabel="Working…" className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
               Submit for verification
-            </button>
+            </SubmitButton>
           </form>
         </section>
       ) : null}
@@ -232,9 +375,9 @@ export default async function DashboardPage({
                 defaultValue={Array.isArray(creator.perks) ? (creator.perks as string[]).join("\n") : ""}
                 className={inputClass}
               />
-              <button className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
+              <SubmitButton pendingLabel="Working…" className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
                 Save perks
-              </button>
+              </SubmitButton>
             </form>
           </section>
 
@@ -247,9 +390,9 @@ export default async function DashboardPage({
               </p>
               <form action={payoutAction} className="mt-3">
                 <input type="hidden" name="creatorId" value={creator.id} />
-                <button className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
+                <SubmitButton pendingLabel="Working…" className="rounded bg-volt px-4 py-2 text-sm font-bold uppercase tracking-wide text-chalk hover:brightness-110">
                   Activate payouts
-                </button>
+                </SubmitButton>
               </form>
             </section>
           ) : null}

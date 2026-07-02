@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { copy } from "@famerace/core";
 import { EmptyStage } from "@/components/stage";
+import { SubmitButton } from "@/components/submit-button";
 
 /** Status chip with the Electric Backstage status colors (PRD §0B.3). */
 export function StatusChip({ status }: { status: string }) {
@@ -66,13 +67,22 @@ export function RiskDisclosure({
         ))}
         {feeLine ? <p className="mt-1 text-chrome">{feeLine}</p> : null}
       </div>
-      <button
-        type="submit"
-        disabled={disabled}
-        className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink transition hover:brightness-110 disabled:opacity-40"
-      >
-        {confirmLabel}
-      </button>
+      {disabled ? (
+        <button
+          type="submit"
+          disabled
+          className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink opacity-40"
+        >
+          {confirmLabel}
+        </button>
+      ) : (
+        <SubmitButton
+          pendingLabel="Making it count…"
+          className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink transition hover:brightness-110"
+        >
+          {confirmLabel}
+        </SubmitButton>
+      )}
     </div>
   );
 }

@@ -161,7 +161,7 @@ async function rejectMessageInner(creatorUserId: string, messageId: string) {
 export async function inboxFor(creatorId: string) {
   return prisma.paidMessage.findMany({
     where: { creatorId },
-    include: { fromUser: { select: { username: true } } },
+    include: { fromUser: { select: { username: true, avatarUrl: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
