@@ -106,6 +106,23 @@ export async function buy(userId: string, marketId: string, spendCents: number) 
   if (!Number.isInteger(spendCents) || spendCents < 100) {
     throw new DomainError("BAD_AMOUNT", "Minimum back is $1");
   }
+  // Funding rail: hold the full spend up front; capture only if the trade
+  // commits, release on any failure. (The exact charge is <= spend; change
+  // is paid back as a payout below.)
+  const auth = await paymentProvider.authorize({ userId, amountCents: spendCents, purpose: "curve_buy" });
+  try {
+    const result = await buyInner(userId, marketId, spendCents);
+    await paymentProvider.capture(auth.authRef);
+    const change = spendCents - result.chargedCents;
+    if (change > 0) await paymentProvider.payout({ userId, amountCents: change, memo: "Change from back" });
+    return result;
+  } catch (error) {
+    await paymentProvider.release(auth.authRef).catch(() => {});
+    throw error;
+  }
+}
+
+async function buyInner(userId: string, marketId: string, spendCents: number) {
   return moneyTx(async (tx) => {
     const market = await tx.creatorMarket.findUnique({
       where: { id: marketId },
@@ -220,6 +237,12 @@ export async function buy(userId: string, marketId: string, spendCents: number) 
 
 export async function sell(userId: string, marketId: string, units: number) {
   if (!Number.isInteger(units) || units <= 0) throw new DomainError("BAD_AMOUNT", "Units must be positive");
+  const result = await sellInner(userId, marketId, units);
+  await paymentProvider.payout({ userId, amountCents: result.quote.netCents, memo: "Sold back to the curve" });
+  return result;
+}
+
+async function sellInner(userId: string, marketId: string, units: number) {
   return moneyTx(async (tx) => {
     const market = await tx.creatorMarket.findUnique({
       where: { id: marketId },

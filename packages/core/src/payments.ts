@@ -23,6 +23,8 @@ export interface PaymentProvider {
   capture(authRef: string): Promise<void>;
   /** Release a hold without capturing (refund the authorization). */
   release(authRef: string): Promise<void>;
+  /** Pay value OUT to a user (sell proceeds, refunds after capture). */
+  payout(input: { userId: string; amountCents: number; memo: string }): Promise<void>;
 }
 
 class DevPaymentProvider implements PaymentProvider {
@@ -43,6 +45,27 @@ class DevPaymentProvider implements PaymentProvider {
   async release(): Promise<void> {
     // Instant success in dev.
   }
+
+  async payout(): Promise<void> {
+    // Instant success in dev — the ledger records the value movement.
+  }
 }
 
-export const paymentProvider: PaymentProvider = new DevPaymentProvider();
+import { UsdcPaymentProvider } from "./modules/wallet";
+
+const dev = new DevPaymentProvider();
+const usdc = new UsdcPaymentProvider();
+const active = (): PaymentProvider => (process.env.PAYMENT_PROVIDER === "usdc" ? usdc : dev);
+
+/** PAYMENT_PROVIDER=usdc runs everything off wallet balances (the native
+ *  rail); anything else keeps the instant dev provider. Resolved per call so
+ *  env is read at runtime, not at import order. */
+export const paymentProvider: PaymentProvider = {
+  get name() {
+    return active().name;
+  },
+  authorize: (input) => active().authorize(input),
+  capture: (authRef) => active().capture(authRef),
+  release: (authRef) => active().release(authRef),
+  payout: (input) => active().payout(input),
+};

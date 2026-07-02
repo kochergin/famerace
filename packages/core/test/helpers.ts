@@ -12,7 +12,14 @@ export async function resetDb(): Promise<void> {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
 }
 
-export async function makeUser(overrides: { username?: string; roles?: ("BACKER" | "SCOUT" | "CREATOR" | "ADMIN")[] } = {}) {
+export async function makeUser(
+  overrides: {
+    username?: string;
+    roles?: ("BACKER" | "SCOUT" | "CREATOR" | "ADMIN")[];
+    /** USDC wallet balance; generously funded by default so money flows just work. */
+    usdcCents?: number;
+  } = {},
+) {
   const suffix = randomBytes(4).toString("hex");
   return prisma.user.create({
     data: {
@@ -22,6 +29,7 @@ export async function makeUser(overrides: { username?: string; roles?: ("BACKER"
       referralCode: randomBytes(6).toString("hex"),
       dobAttested18: true,
       roles: overrides.roles ?? ["BACKER"],
+      usdcCents: overrides.usdcCents ?? 10_000_000,
     },
   });
 }

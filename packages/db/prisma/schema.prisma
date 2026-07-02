@@ -450,6 +450,8 @@ model User {
   email            String?    @unique
   passwordHash     String?
   walletAddress    String?    @unique
+  depositAddress   String?    @unique
+  usdcCents        Int        @default(0)
   country          String?
   roles            Role[]     @default([BACKER])
   referralCode     String     @unique
@@ -490,6 +492,8 @@ model User {
   blocksReceived   UserBlock[]       @relation("Blocked")
   bountiesEarned   ClaimBounty[]
   callStakes       CallStake[]
+  walletEntries    WalletEntry[]
+  paymentHolds     PaymentHold[]
 }
 
 model Session {
@@ -1383,6 +1387,58 @@ model CallStake {
 
   @@unique([callId, userId])
   @@index([userId, settled])
+}
+
+// ───────────────────────── wallet (USDC rail) ─────────────────────────
+
+// Custodial USDC balance per user. Deposits credit it (webhook/onramp),
+// every product flow debits it through the payment provider's holds, and
+// withdrawals send to the user's own walletAddress. Amounts in cents
+// (USDC ≈ USD). The double-entry ledger stays the audit source of truth;
+// this is the funding rail in front of it.
+
+enum WalletEntryKind {
+  DEPOSIT
+  FAUCET
+  HOLD
+  RELEASE
+  REFUND
+  PAYOUT
+  WITHDRAWAL
+}
+
+model WalletEntry {
+  id         String          @id @default(cuid())
+  userId     String
+  kind       WalletEntryKind
+  deltaCents Int
+  ref        String?         @unique // external tx hash / idempotency key
+  memo       String?
+  createdAt  DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+enum PaymentHoldStatus {
+  HELD
+  CAPTURED
+  RELEASED
+}
+
+model PaymentHold {
+  id          String            @id @default(cuid())
+  userId      String
+  amountCents Int
+  purpose     String
+  status      PaymentHoldStatus @default(HELD)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
 }
 
 // ───────────────────────── media ─────────────────────────

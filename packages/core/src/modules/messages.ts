@@ -110,6 +110,16 @@ export async function respondToMessage(creatorUserId: string, messageId: string,
 
 /** Creator rejects: full refund from pending (§9.10 clear refund policy). */
 export async function rejectMessage(creatorUserId: string, messageId: string) {
+  const result = await rejectMessageInner(creatorUserId, messageId);
+  await paymentProvider.payout({
+    userId: result.fromUserId,
+    amountCents: result.priceCents,
+    memo: "Paid message declined — refund",
+  });
+  return result;
+}
+
+async function rejectMessageInner(creatorUserId: string, messageId: string) {
   return prisma.$transaction(async (tx) => {
     const message = await tx.paidMessage.findUnique({
       where: { id: messageId },

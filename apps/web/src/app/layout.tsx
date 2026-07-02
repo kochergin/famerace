@@ -67,6 +67,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     </Link>
                   ) : null}
                   <Link
+                    href="/wallet"
+                    className="stat rounded-md border border-lime/40 bg-lime/10 px-2.5 py-1 text-xs font-bold text-lime transition hover:bg-lime/15"
+                    title="Wallet"
+                  >
+                    ${(user.usdcCents / 100).toFixed(2)}
+                  </Link>
+                  <Link
                     href="/notifications"
                     className="relative inline-flex h-8 w-8 items-center justify-center rounded-md text-muted transition hover:bg-panel hover:text-chalk"
                     title="Notifications"

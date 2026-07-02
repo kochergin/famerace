@@ -316,6 +316,8 @@ export async function expireMissions(now = new Date()): Promise<number> {
     select: { id: true },
   });
   for (const { id } of due) {
+    // Collected inside the tx, paid out on the rail only after it commits.
+    const refunds: { userId: string; amountCents: number }[] = [];
     await prisma.$transaction(async (tx) => {
       const mission = await tx.mission.findUniqueOrThrow({ where: { id }, include: { creator: true } });
       if (mission.fundedCents === 0) {
@@ -350,6 +352,7 @@ export async function expireMissions(now = new Date()): Promise<number> {
           { kind: "mission_refund", missionId: id, contributionId: contribution.id },
         );
         await tx.missionContribution.update({ where: { id: contribution.id }, data: { refunded: true } });
+        refunds.push({ userId: contribution.userId, amountCents: contribution.amountCents });
       }
       // Returned match budget is spendable again.
       const matchReturned = contributions.reduce((sum, c) => sum + c.matchCents, 0);
@@ -367,6 +370,9 @@ export async function expireMissions(now = new Date()): Promise<number> {
         objectId: id,
       });
     });
+    for (const refund of refunds) {
+      await paymentProvider.payout({ ...refund, memo: "Mission expired — refund" });
+    }
   }
   return due.length;
 }

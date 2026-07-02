@@ -33,6 +33,7 @@ export type { SeasonRecap } from "./modules/recap";
 export * as draftday from "./modules/draftday";
 export * as calls from "./modules/calls";
 export * as supporters from "./modules/supporters";
+export * as wallet from "./modules/wallet";
 export type { DraftDayLineupRow, DraftDayState } from "./modules/draftday";
 export type { DraftBoardRow } from "./modules/draft";
 export type { DemandSummary } from "./modules/demand";

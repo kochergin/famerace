@@ -127,6 +127,16 @@ export async function deliverOrder(creatorUserId: string, orderId: string) {
 
 /** Refund any undelivered order in full (§9.11 approval/refund workflow). */
 export async function refundOrder(creatorUserId: string, orderId: string) {
+  const updated = await refundOrderInner(creatorUserId, orderId);
+  await paymentProvider.payout({
+    userId: updated.userId,
+    amountCents: updated.refundedCents,
+    memo: "Request refunded",
+  });
+  return updated;
+}
+
+async function refundOrderInner(creatorUserId: string, orderId: string) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.requestOrder.findUnique({
       where: { id: orderId },
@@ -146,13 +156,14 @@ export async function refundOrder(creatorUserId: string, orderId: string) {
       { kind: "request_refund", orderId },
     );
     const updated = await tx.requestOrder.update({ where: { id: orderId }, data: { status: "REFUNDED" } });
+    const refundShape = { ...updated, refundedCents: order.item.priceCents };
     await notify(tx, {
       userId: order.userId,
       type: "PAYOUT_UPDATE",
       title: `Refunded: ${order.item.title}`,
       link: `/c/${order.item.creator.handle}`,
     });
-    return updated;
+    return refundShape;
   });
 }
 

@@ -9,6 +9,7 @@
 import { Resvg } from "@resvg/resvg-js";
 import { prisma } from "../packages/db/src/index";
 import * as callsMod from "../packages/core/src/modules/calls";
+import * as walletMod from "../packages/core/src/modules/wallet";
 import * as media from "../packages/core/src/modules/media";
 import * as users from "../packages/core/src/modules/users";
 import * as draft from "../packages/core/src/modules/draft";
@@ -102,6 +103,13 @@ async function main() {
   );
   const miraUser = await mk("mira_irl", "MIRA");
   const kaiUser = await mk("kai_builds", "KAI");
+
+  console.log("seed: wallets\u2026");
+  // Everyone gets a funded USDC wallet so every flow runs on the native rail.
+  for (const u of [admin, scout1, scout2, ...fans, miraUser, kaiUser]) {
+    await walletMod.ensureDepositAddress(u.id);
+    await walletMod.creditDeposit(u.id, 200_000, `seed_${u.id}`, "Genesis season funding");
+  }
 
   console.log("seed: draft board…");
   const nominate = (scoutId: string, name: string, category: never, thesis: string, mission?: string, link?: string) =>

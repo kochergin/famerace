@@ -13,6 +13,10 @@ export default defineConfig({
       // Small launch gate so threshold transitions are testable (config env overrides).
       LAUNCH_REQUIRED_BACKERS: "2",
       LAUNCH_REQUIRED_DEMAND_CENTS: "20000",
+      // The whole suite runs on the native USDC rail — every money flow
+      // exercises real holds/captures against wallet balances.
+      PAYMENT_PROVIDER: "usdc",
+      DEV_FAUCET: "1",
     },
     testTimeout: 20_000,
     hookTimeout: 20_000,
