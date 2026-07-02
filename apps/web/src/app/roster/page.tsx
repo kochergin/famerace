@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { roster as rosterMod, scores } from "@famerace/core";
-import { SectionTitle, Stat, StatusChip } from "@/components/ui";
+import { Monogram } from "@/components/monogram";
+import { Gauge, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
 
@@ -21,23 +22,24 @@ export default async function RosterPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="display text-5xl">My Roster</h1>
-          <p className="mt-1 text-sm text-muted">
-            Taste Score: <span className="stat font-bold text-lime">{taste?.score ?? 0}</span>
-            {taste ? (
-              <>
-                {" "}
-                · Early Rank <span className="stat text-chalk">#{num(taste.rank)}</span>
-              </>
-            ) : null}
-          </p>
+      <div className="card spotlight fade-up flex flex-wrap items-center justify-between gap-6 p-6" style={{ "--spot": "rgb(201 247 58 / 0.1)" } as React.CSSProperties}>
+        <div className="flex items-center gap-6">
+          <Gauge
+            score={taste?.score ?? 0}
+            label="Taste Score"
+            sub={taste ? `Rank #${num(taste.rank)}` : undefined}
+          />
+          <div>
+            <h1 className="display text-5xl sm:text-6xl">My Roster</h1>
+            <p className="mt-2 max-w-sm text-sm text-muted">
+              Find them early. Back their rise. This is the proof.
+            </p>
+          </div>
         </div>
         <a
           href={`/card/roster/${user.username}`}
           target="_blank"
-          className="rounded bg-pink px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110"
+          className="rounded bg-pink px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(255,61,141,0.35)] transition hover:brightness-110"
         >
           Generate Roster Card
         </a>
@@ -88,11 +90,14 @@ export default async function RosterPage() {
             const name = creator?.displayName ?? draft?.nameOrHandle ?? "Unknown";
             const category = creator?.category ?? draft?.category;
             return (
-              <Link key={entry.id} href={href} className="card block p-4 hover:border-pink">
+              <Link key={entry.id} href={href} className="card block p-4" style={{ "--glow": "rgb(255 61 141 / 0.25)" } as React.CSSProperties}>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted">{category ? CATEGORY_LABELS[category] : ""}</p>
-                    <h3 className="display text-2xl">{name}</h3>
+                  <div className="flex items-center gap-3">
+                    <Monogram name={name} size="md" ring={backed ? "gold" : creator?.status === "LIVE" ? "live" : "draft"} />
+                    <div>
+                      <p className="text-xs text-muted">{category ? CATEGORY_LABELS[category] : ""}</p>
+                      <h3 className="display text-2xl">{name}</h3>
+                    </div>
                   </div>
                   {backed ? (
                     <span className="chip bg-lime/15 text-lime">Backed</span>

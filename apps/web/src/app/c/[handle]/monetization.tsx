@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { backstage, copy, drops as dropsMod, missions as missionsMod } from "@famerace/core";
 import { prisma, type BackstageTier, type Drop, type Mission } from "@famerace/db";
-import { FuelBar, RiskDisclosure, SectionTitle } from "@/components/ui";
+import { FuelBar, RiskDisclosure, SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -82,7 +82,7 @@ export function MissionSection({
 }) {
   if (missions.length === 0) return null;
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="gold">
       <SectionTitle>Missions</SectionTitle>
       <div className="space-y-5">
         {missions.map((mission) => {
@@ -142,7 +142,7 @@ export function MissionSection({
           );
         })}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -169,7 +169,7 @@ export async function BackstageSection({
   const isMember = membership?.status === "ACTIVE";
 
   return (
-    <section className="card mt-6 border-velvet/60 p-6" style={{ backgroundImage: "radial-gradient(120% 80% at 50% 0%, rgb(122 31 51 / 0.15), transparent 60%)" }}>
+    <SectionCard accent="velvet">
       <SectionTitle right={isMember ? <span className="chip bg-velvet/40 text-chalk">Member</span> : undefined}>
         Backstage
       </SectionTitle>
@@ -204,7 +204,7 @@ export async function BackstageSection({
           ))
         )}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -266,14 +266,14 @@ export async function DropsSection({ creatorId, handle }: { creatorId: string; h
     : new Set<string>();
 
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="pink">
       <SectionTitle>Paid drops</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-2">
         {drops.map((drop) => (
           <DropCard key={drop.id} drop={drop} handle={handle} owned={owned.has(drop.id)} signedIn={Boolean(user)} />
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -323,7 +323,7 @@ function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: strin
 export function TipBox({ creatorId, handle, signedIn }: { creatorId: string; handle: string; signedIn: boolean }) {
   if (!signedIn) return null;
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="pink">
       <SectionTitle>Send a boost</SectionTitle>
       <form action={tipAction} className="flex flex-wrap items-center gap-2">
         <input type="hidden" name="handle" value={handle} />
@@ -347,6 +347,6 @@ export function TipBox({ creatorId, handle, signedIn }: { creatorId: string; han
         </button>
       </form>
       <p className="mt-2 text-xs text-muted">90% goes to the creator.</p>
-    </section>
+    </SectionCard>
   );
 }

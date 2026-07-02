@@ -42,13 +42,40 @@ export async function rosterFor(userId: string) {
     ...passes.map((p) => p.creatorId),
     ...entries.filter((e) => e.source === "BACKED").map((e) => e.creatorId),
   ]);
+
+  // A claimed draft and its creator are the same person — collapse them.
+  // If the roster also holds the creator entry, the stale draft entry is
+  // dropped; otherwise the draft entry resolves through to the creator.
+  const claimedDraftCreators = new Map(
+    (
+      await prisma.creator.findMany({
+        where: { draftProfileId: { in: draftIds } },
+        include: { market: { select: { ticker: true, priceCents: true, status: true } } },
+      })
+    ).map((c) => [c.draftProfileId as string, c]),
+  );
+  const creatorIdsOnRoster = new Set(creatorIds);
+
+  const resolved = entries
+    .map((entry) => {
+      const claimedCreator = entry.draftProfileId
+        ? claimedDraftCreators.get(entry.draftProfileId)
+        : undefined;
+      if (claimedCreator && creatorIdsOnRoster.has(claimedCreator.id)) return null; // duplicate person
+      const creator = entry.creatorId
+        ? (creatorMap.get(entry.creatorId) ?? null)
+        : (claimedCreator ?? null);
+      return {
+        entry,
+        creator,
+        draft: !creator && entry.draftProfileId ? (draftMap.get(entry.draftProfileId) ?? null) : null,
+        backed: creator ? backedCreatorIds.has(creator.id) : false,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
+
   return {
-    entries: entries.map((entry) => ({
-      entry,
-      creator: entry.creatorId ? (creatorMap.get(entry.creatorId) ?? null) : null,
-      draft: entry.draftProfileId ? (draftMap.get(entry.draftProfileId) ?? null) : null,
-      backed: entry.creatorId ? backedCreatorIds.has(entry.creatorId) : false,
-    })),
+    entries: resolved,
     taste,
     stats: {
       backedCount: backedCreatorIds.size,

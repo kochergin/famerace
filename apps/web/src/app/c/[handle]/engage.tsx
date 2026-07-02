@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { messages as messagesMod, requests as requestsMod } from "@famerace/core";
-import { SectionTitle } from "@/components/ui";
+import { SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -49,7 +49,7 @@ export function PaidMessageBox({
 }) {
   if (!signedIn) return null;
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="volt">
       <SectionTitle>Paid message</SectionTitle>
       <p className="mb-3 text-xs text-muted">
         Put a message in front of {displayName}. If they respond, they earn it — if they decline,
@@ -82,7 +82,7 @@ export function PaidMessageBox({
           </button>
         </div>
       </form>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -97,7 +97,7 @@ export async function RequestMenuSection({
   const [items, user] = await Promise.all([requestsMod.menuFor(creatorId), currentUser()]);
   if (items.length === 0) return null;
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="gold">
       <SectionTitle>Request menu</SectionTitle>
       <p className="mb-3 text-xs text-muted">
         Escrowed until delivered — undelivered requests refund in full.
@@ -126,6 +126,6 @@ export async function RequestMenuSection({
           </div>
         ))}
       </div>
-    </section>
+    </SectionCard>
   );
 }

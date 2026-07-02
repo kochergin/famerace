@@ -6,13 +6,17 @@ import { prisma } from "@famerace/db";
 import { FormError } from "@/components/form-error";
 import { RiskDisclosure, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
-import { CATEGORY_LABELS, money, num, timeAgo, countdown } from "@/lib/format";
+import { CATEGORY_LABELS, money, num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
 import { BackstageSection, DropsSection, MissionSection, TipBox } from "./monetization";
 import { StreetTeamSection } from "./street-team";
 import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
+import { Monogram } from "@/components/monogram";
+import { Countdown } from "@/components/countdown";
+import { Sparkline } from "@/components/sparkline";
+import { Banner } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +108,16 @@ export default async function CreatorPage({
   if (!creator || !["LAUNCHING_SOON", "LIVE", "PAUSED"].includes(creator.status)) notFound();
   const m = creator.market;
   const overview = m ? await marketMod.marketOverview(m.id) : null;
+  const priceHistory = m
+    ? (
+        await prisma.marketTransaction.findMany({
+          where: { creatorMarketId: m.id },
+          orderBy: { createdAt: "asc" },
+          take: 60,
+          select: { priceAfterCents: true },
+        })
+      ).map((t) => t.priceAfterCents)
+    : [];
   const holding = user && m
     ? await prisma.holding.findUnique({
         where: { userId_creatorMarketId: { userId: user.id, creatorMarketId: m.id } },
@@ -135,13 +149,23 @@ export default async function CreatorPage({
       <FormError error={flags.error} />
 
       {/* Hero (PRD §0B.7: a stage, not just a chart) */}
-      <div className="card p-6">
+      <div
+        className="card spotlight fade-up p-6"
+        style={{ "--spot": creator.status === "LIVE" ? "rgb(201 247 58 / 0.13)" : "rgb(61 123 255 / 0.13)" } as React.CSSProperties}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+          <div className="flex items-start gap-5">
+            <Monogram
+              name={creator.displayName}
+              size="xl"
+              ring={creator.status === "LIVE" ? "live" : "draft"}
+              className="mt-1"
+            />
+            <div>
             <p className="stat text-sm text-muted">
               {m ? `$${m.ticker}` : ""} · {CATEGORY_LABELS[creator.category]}
             </p>
-            <h1 className="display mt-1 text-6xl">{creator.displayName}</h1>
+            <h1 className="display mt-1 text-6xl md:text-7xl">{creator.displayName}</h1>
             {creator.bio ? <p className="mt-2 max-w-xl text-chrome">{creator.bio}</p> : null}
             {socials.length ? (
               <p className="mt-2 space-x-3 text-sm">
@@ -152,6 +176,7 @@ export default async function CreatorPage({
                 ))}
               </p>
             ) : null}
+            </div>
           </div>
           <StatusChip status={creator.status === "LIVE" && m?.status === "PAUSED" ? "PAUSED" : creator.status} />
         </div>
@@ -159,7 +184,7 @@ export default async function CreatorPage({
         {creator.status === "LAUNCHING_SOON" && creator.launchAt ? (
           <div className="mt-6 rounded border border-lime/40 bg-lime/5 p-4 text-center">
             <p className="text-xs uppercase tracking-widest text-muted">Launching in</p>
-            <p className="display pulse-soft mt-1 text-5xl text-lime">{countdown(creator.launchAt)}</p>
+            <Countdown to={creator.launchAt.toISOString()} className="display mt-1 block text-6xl text-lime" />
             <p className="mt-2 text-sm text-muted">
               Opening auction clears all confirmed demand through one fair fill. No snipers, no empty
               launches — every market opens with a crowd.
@@ -174,6 +199,14 @@ export default async function CreatorPage({
             <Stat label="Supply" value={num(m.supplyUnits)} />
             <Stat label="Volume" value={money(m.volumeTotalCents, { compact: true })} />
             {creator.followerCount > 0 ? <Stat label="Followers" value={num(creator.followerCount)} accent="text-pink" /> : null}
+          </div>
+        ) : null}
+        {priceHistory.length >= 2 ? (
+          <div className="mt-4">
+            <Sparkline points={priceHistory} width={900} height={64} className="w-full" />
+            <p className="mt-1 text-[10px] uppercase tracking-widest text-muted">
+              Price since launch · blue dot = opening auction
+            </p>
           </div>
         ) : null}
         <div className="mt-4 border-t border-edge pt-4">
@@ -230,9 +263,24 @@ export default async function CreatorPage({
                 />
               </form>
             ) : (
-              <Link href="/join" className="inline-block rounded bg-lime px-4 py-2 font-bold uppercase tracking-wide text-ink">
-                Join to back
-              </Link>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {[2500, 10000, 50000].map((cents) => (
+                    <span key={cents} className="stat inline-block rounded border border-edge px-4 py-2 text-sm font-bold text-muted">
+                      {money(cents)}
+                    </span>
+                  ))}
+                </div>
+                <ul className="list-inside list-disc text-xs text-muted">
+                  <li>${m.ticker} access/status units on the live curve</li>
+                  <li>Permanent backer rank on first back</li>
+                  <li>Holder-gated Backstage eligibility</li>
+                </ul>
+                <p className="text-xs text-chrome">{copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}</p>
+                <Link href="/join" className="block rounded bg-lime px-4 py-3 text-center font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(201,247,58,0.3)] transition hover:brightness-110">
+                  Join to back
+                </Link>
+              </div>
             )}
             {holding && holding.amountUnits > 0 ? (
               <form action={sellAction} className="mt-4 border-t border-edge pt-4">
@@ -304,9 +352,31 @@ export default async function CreatorPage({
                 <RiskDisclosure confirmLabel="Secure Genesis Pass" />
               </form>
             ) : (
-              <Link href="/join" className="inline-block rounded bg-gold px-4 py-2 font-bold uppercase tracking-wide text-ink">
-                Join to back
-              </Link>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { cents: 2500, label: "Starter Backer" },
+                    { cents: 10000, label: "Genesis Backer" },
+                    { cents: 50000, label: "Superfan" },
+                  ].map((tier) => (
+                    <span key={tier.cents} className="inline-block rounded border border-edge px-3 py-2 text-center text-xs font-bold uppercase text-muted">
+                      {money(tier.cents)}
+                      <br />
+                      {tier.label}
+                    </span>
+                  ))}
+                </div>
+                {perks.length ? (
+                  <ul className="list-inside list-disc text-xs text-muted">
+                    {perks.map((perk) => (
+                      <li key={perk}>{perk}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <Link href="/join" className="block rounded bg-gold px-4 py-3 text-center font-bold uppercase tracking-wide text-ink transition hover:brightness-110">
+                  Join to become a Genesis Backer
+                </Link>
+              </div>
             )}
           </section>
         ) : null}
@@ -378,11 +448,3 @@ export default async function CreatorPage({
   );
 }
 
-function Banner({ tone, children }: { tone: "lime" | "chrome" | "gold"; children: React.ReactNode }) {
-  const tones = {
-    lime: "border-lime/30 bg-lime/5 text-lime",
-    chrome: "border-chrome/30 bg-chrome/5 text-chrome",
-    gold: "border-gold/40 bg-gold/10 text-gold",
-  } as const;
-  return <p className={`mb-4 rounded border px-3 py-2 text-sm ${tones[tone]}`}>{children}</p>;
-}

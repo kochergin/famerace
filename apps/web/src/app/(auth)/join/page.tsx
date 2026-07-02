@@ -31,7 +31,23 @@ export default async function JoinPage({
 }) {
   const params = await searchParams;
   return (
-    <div className="mx-auto max-w-md py-8">
+    <div className="mx-auto grid max-w-4xl items-center gap-10 py-8 md:grid-cols-2">
+      <div className="fade-up hidden md:block">
+        <p className="chip border border-lime/40 bg-lime/10 text-lime">Genesis Draft · Season 1</p>
+        <h2 className="display mt-4 text-6xl leading-none">
+          Find them early.
+          <br />
+          Back their rise.
+          <br />
+          <span className="display-hot">Prove your taste.</span>
+        </h2>
+        <ul className="mt-6 space-y-2 text-sm text-muted">
+          <li>◆ Draft rising creators before the world notices</li>
+          <li>◆ Permanent Genesis numbers — proof you were early</li>
+          <li>◆ Fund missions that change careers, with receipts</li>
+        </ul>
+      </div>
+      <div>
       <h1 className="display text-4xl">Join the draft</h1>
       <p className="mt-1 text-muted">{copy.heroLines.join(" ")}</p>
       <form action={joinAction} className="mt-6 space-y-3">
@@ -65,6 +81,7 @@ export default async function JoinPage({
           Sign in
         </Link>
       </p>
+      </div>
     </div>
   );
 }

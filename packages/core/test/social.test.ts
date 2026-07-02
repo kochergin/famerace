@@ -179,3 +179,20 @@ describe("roster + share cards", () => {
     expect(await prisma.shareCard.count()).toBe(cases.length);
   });
 });
+
+describe("roster dedupe (claimed draft = same person)", () => {
+  beforeEach(resetDb);
+
+  it("collapses a watched draft into its claimed creator", async () => {
+    const { fan2, creator, profile } = await liveCreatorWithBackers();
+    // fan2 was watching the draft (from pledging) AND backed the creator at
+    // launch — before the fix that rendered as two roster rows for MIRA.
+    const roster = await rosterMod.rosterFor(fan2.id);
+    const miraRows = roster.entries.filter(
+      (row) => row.creator?.id === creator.id || row.draft?.id === profile.id,
+    );
+    expect(miraRows).toHaveLength(1);
+    expect(miraRows[0]!.creator?.id).toBe(creator.id); // resolves to the creator
+    expect(miraRows[0]!.draft).toBeNull();
+  });
+});

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { streetteam } from "@famerace/core";
 import { prisma } from "@famerace/db";
-import { SectionTitle } from "@/components/ui";
+import { SectionCard, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { currentUser } from "@/lib/session";
 
@@ -39,7 +39,7 @@ export async function StreetTeamSection({ creatorId, handle }: { creatorId: stri
     : new Map<string, string>();
 
   return (
-    <section className="card mt-6 p-6">
+    <SectionCard accent="volt">
       <SectionTitle>Street Team</SectionTitle>
       <p className="mb-3 text-xs text-muted">
         Backers do not just watch — they make the breakout happen. Complete quests, earn XP and crew
@@ -88,6 +88,6 @@ export async function StreetTeamSection({ creatorId, handle }: { creatorId: stri
           );
         })}
       </div>
-    </section>
+    </SectionCard>
   );
 }

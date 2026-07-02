@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@famerace/db";
 import type { CreatorCategory } from "@famerace/db";
+import { Monogram } from "@/components/monogram";
 import { EmptyState, SectionTitle, StatusChip } from "@/components/ui";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 
@@ -109,11 +110,48 @@ export default async function FameRace100Page({
       {scored.length === 0 ? (
         <EmptyState title="No ranked creators yet" hint="Rankings open as creators claim and launch." />
       ) : (
+        <>
+        {/* Podium — the top three get the spotlight */}
+        {scored.length >= 2 ? (
+          <div className={`mb-4 grid gap-3 ${scored.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+            {scored.slice(0, 3).map(({ creator, change }, index) => {
+              const medal = ["text-gold", "text-chrome", "text-[#cd7f32]"][index]!;
+              const spot = [
+                "rgb(240 195 60 / 0.14)",
+                "rgb(217 219 227 / 0.10)",
+                "rgb(205 127 50 / 0.12)",
+              ][index]!;
+              return (
+                <Link
+                  key={creator.id}
+                  href={`/c/${creator.handle}`}
+                  className="card spotlight block p-5 text-center"
+                  style={{ "--spot": spot } as React.CSSProperties}
+                >
+                  <p className={`display text-4xl ${medal}`}>#{index + 1}</p>
+                  <div className="mt-3 flex justify-center">
+                    <Monogram name={creator.displayName} size="lg" ring={index === 0 ? "gold" : "none"} />
+                  </div>
+                  <h3 className="display mt-2 truncate text-2xl">{creator.displayName}</h3>
+                  <p className="stat mt-1 text-sm text-muted">
+                    Fame <span className="font-bold text-lime">{creator.fameScore}</span>
+                    {change !== 0 ? (
+                      <span className={change > 0 ? " text-lime" : " text-pink"}>
+                        {" "}{change > 0 ? `▲${change}` : `▼${Math.abs(change)}`}
+                      </span>
+                    ) : null}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
         <ol className="card divide-y divide-edge">
           {scored.map(({ creator, change, backed, missionProgress }, index) => (
             <li key={creator.id} className="flex items-center justify-between gap-2 px-5 py-3">
               <Link href={`/c/${creator.handle}`} className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80">
                 <span className="stat w-8 shrink-0 text-right text-muted">#{index + 1}</span>
+                <Monogram name={creator.displayName} size="sm" />
                 <span className="min-w-0">
                   <span className="font-semibold text-chalk">{creator.displayName}</span>{" "}
                   <span className="text-xs text-muted">
@@ -162,6 +200,7 @@ export default async function FameRace100Page({
             </li>
           ))}
         </ol>
+        </>
       )}
     </div>
   );

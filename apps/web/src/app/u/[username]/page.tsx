@@ -5,6 +5,7 @@ import { DomainError, roster as rosterMod, safety } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { ReportForm } from "@/components/report";
 import { withErrorRedirect } from "@/lib/action";
+import { Monogram } from "@/components/monogram";
 import { SectionTitle, Stat } from "@/components/ui";
 import { num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -60,7 +61,9 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="flex items-center gap-4">
+          <Monogram name={user.username} size="xl" />
+          <div>
           <h1 className="display text-5xl">@{user.username}</h1>
           <p className="mt-1 text-muted">
             {user.displayName} · joined {timeAgo(user.createdAt)}
@@ -74,6 +77,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
               </>
             ) : null}
           </p>
+          </div>
         </div>
         {isSelf ? (
           <div className="flex items-center gap-2">
@@ -117,12 +121,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
             {user.badges.map((badge) => (
               <span
                 key={badge.id}
-                className={`chip border ${
+                className={`badge-card chip border px-3 py-1.5 ${
                   badge.badgeType === "GENESIS_BACKER"
-                    ? "border-gold/40 bg-gold/10 text-gold"
+                    ? "border-gold/50 bg-gold/10 text-gold"
                     : badge.badgeType === "GENESIS_SCOUT"
-                      ? "border-volt/40 bg-volt/10 text-volt"
-                      : "border-lime/40 bg-lime/10 text-lime"
+                      ? "border-volt/50 bg-volt/10 text-volt"
+                      : "border-lime/50 bg-lime/10 text-lime"
                 }`}
               >
                 {badge.label}
