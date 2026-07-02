@@ -419,7 +419,7 @@ export async function marketOverview(marketId: string) {
       where: { creatorMarketId: marketId, backerRank: { not: null } },
       orderBy: { backerRank: "asc" },
       take: config.genesisWallSize,
-      include: { user: { select: { username: true } } },
+      include: { user: { select: { username: true, avatarUrl: true } } },
     }),
   ]);
   return { transactions, topHoldings, wall };

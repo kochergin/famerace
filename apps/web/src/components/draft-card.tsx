@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DraftBoardRow } from "@famerace/core";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
+import { CategoryGlyph } from "./category-art";
 import { Monogram } from "./monogram";
 
 const CATEGORY_EDGE: Record<string, string> = {
@@ -8,6 +9,13 @@ const CATEGORY_EDGE: Record<string, string> = {
   INTERNET_CREATOR: "border-l-volt/70",
   BUILDER_FOUNDER: "border-l-lime/70",
   ARTIST_DESIGNER: "border-l-gold/70",
+};
+
+const CATEGORY_TINT: Record<string, string> = {
+  MUSICIAN: "text-pink",
+  INTERNET_CREATOR: "text-volt",
+  BUILDER_FOUNDER: "text-lime",
+  ARTIST_DESIGNER: "text-gold",
 };
 
 /** Draft Board card — collectible sports card feel (PRD §0B.6):
@@ -43,7 +51,10 @@ export function DraftCard({ profile }: { profile: DraftBoardRow }) {
         />
         <div className="min-w-0">
           <h3 className="display truncate text-3xl">{profile.nameOrHandle}</h3>
-          <p className="text-sm text-muted">{CATEGORY_LABELS[profile.category]} · nominated by fans</p>
+          <p className="flex items-center gap-1.5 text-sm text-muted">
+            <CategoryGlyph category={profile.category} className={`h-3.5 w-3.5 ${CATEGORY_TINT[profile.category] ?? ""}`} />
+            {CATEGORY_LABELS[profile.category]} · nominated by fans
+          </p>
         </div>
       </div>
       {profile.reasonNominated ? (

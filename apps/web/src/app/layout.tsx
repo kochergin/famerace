@@ -107,7 +107,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto max-w-6xl px-4 py-6">
           <ViewTransition>{children}</ViewTransition>
         </main>
-        <footer className="mt-16 border-t border-edge py-8 text-center text-xs text-muted">
+        {/* The chant — giant outlined type rolling past like arena signage */}
+        <div aria-hidden className="mt-20 overflow-hidden">
+          <div className="marquee-slow chant">
+            {[0, 1].map((i) => (
+              <span key={i} className="pr-16">
+                BACK THE RISE ✦ FIND THEM EARLY ✦ THE INTERNET DECIDES ✦ PROVE YOUR TASTE ✦{" "}
+              </span>
+            ))}
+          </div>
+        </div>
+        <footer className="border-t border-edge py-8 text-center text-xs text-muted">
           <p className="display text-lg text-chrome">{copy.tagline}</p>
           <p className="mt-2 mx-auto max-w-lg">{copy.footerLegal}</p>
           <p className="mt-2">

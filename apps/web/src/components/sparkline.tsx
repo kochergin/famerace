@@ -41,7 +41,16 @@ export function Sparkline({
         </linearGradient>
       </defs>
       <path d={`${path} L${last[0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`} fill="url(#spark-fill)" />
-      <path d={path} fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d={path}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        pathLength={1}
+        className="spark-draw"
+      />
       {/* launch point — where the story starts */}
       <circle cx={coords[0]![0]} cy={coords[0]![1]} r="2.5" fill="#3d7bff" />
       <circle cx={last[0]} cy={last[1]} r="3" fill={stroke}>

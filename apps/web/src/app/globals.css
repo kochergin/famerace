@@ -344,3 +344,129 @@ a:hover .face > .face-lines,
     transform: translateY(12px);
   }
 }
+
+/* ── Alive layer ─────────────────────────────────────────────────────────
+   Film grain, stage lights, living backdrops and load-in motion. Everything
+   here is decorative: pointer-events none, aria-hidden at call sites, and
+   switched off under prefers-reduced-motion. */
+
+/* Film grain over everything — the filmic texture that kills "flat web page" */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Sweeping stage-light beams (homepage hero) */
+.beam {
+  position: absolute;
+  top: -12%;
+  width: 34%;
+  height: 130%;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgb(201 247 58 / 0.14), rgb(201 247 58 / 0.02) 55%, transparent 78%);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  filter: blur(6px);
+}
+.beam-pink {
+  background: linear-gradient(to bottom, rgb(255 61 141 / 0.12), rgb(255 61 141 / 0.02) 55%, transparent 78%);
+}
+@keyframes beam-sway-a {
+  from { transform: rotate(-9deg); }
+  to { transform: rotate(7deg); }
+}
+@keyframes beam-sway-b {
+  from { transform: rotate(10deg); }
+  to { transform: rotate(-8deg); }
+}
+.beam-a { animation: beam-sway-a 9s ease-in-out infinite alternate; }
+.beam-b { animation: beam-sway-b 11s ease-in-out infinite alternate; }
+
+/* Floating dust in the light */
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 0; }
+  12% { opacity: 0.7; }
+  88% { opacity: 0.35; }
+  100% { transform: translateY(-140px); opacity: 0; }
+}
+.dust {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgb(201 247 58 / 0.7);
+  animation: float-up 7s linear infinite;
+  pointer-events: none;
+}
+
+/* Sparkline draws itself on load (pathLength=1 trick) */
+.spark-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: spark-draw 1.3s cubic-bezier(0.4, 0, 0.2, 1) 150ms forwards;
+}
+@keyframes spark-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Fuel bars fill in from zero on load */
+.fuel > div {
+  transform-origin: left center;
+  animation: fuel-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fuel-in {
+  from { transform: scaleX(0); }
+}
+
+/* The chant: giant outlined type scrolling behind the footer */
+.chant {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 12vw, 150px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(244 244 240 / 0.1);
+  white-space: nowrap;
+  user-select: none;
+}
+.marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee 70s linear infinite;
+}
+
+/* Living backdrop: the creator's own art, blown out behind their stage */
+.backdrop-art {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  object-fit: cover;
+  width: 140%;
+  height: 140%;
+  filter: blur(48px) saturate(1.4) brightness(0.7);
+  opacity: 0.5;
+  mask-image: linear-gradient(to bottom, black, transparent 92%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-a,
+  .beam-b,
+  .dust,
+  .marquee-slow {
+    animation: none;
+  }
+  .spark-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .fuel > div {
+    animation: none;
+  }
+}

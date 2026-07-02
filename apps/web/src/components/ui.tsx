@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { copy } from "@famerace/core";
+import { EmptyStage } from "@/components/stage";
 
 /** Status chip with the Electric Backstage status colors (PRD §0B.3). */
 export function StatusChip({ status }: { status: string }) {
@@ -79,6 +80,7 @@ export function RiskDisclosure({
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="card flex flex-col items-center gap-1 px-6 py-10 text-center">
+      <EmptyStage className="mb-3" />
       <p className="display text-xl text-muted">{title}</p>
       {hint ? <p className="text-sm text-muted">{hint}</p> : null}
     </div>

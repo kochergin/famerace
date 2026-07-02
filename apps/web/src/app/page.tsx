@@ -7,6 +7,7 @@ import { DraftCard } from "@/components/draft-card";
 import { LiveFeed } from "@/components/live-feed";
 import { Monogram } from "@/components/monogram";
 import { Sparkline } from "@/components/sparkline";
+import { Crowd, StageLights } from "@/components/stage";
 import { TiltCard } from "@/components/tilt-card";
 import { FuelBar, SectionTitle } from "@/components/ui";
 import { money, num } from "@/lib/format";
@@ -57,12 +58,13 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero + scoreboard (PRD §0A.8) */}
-      <section className="fade-up relative py-12 text-center">
+      {/* Hero + scoreboard (PRD §0A.8) — a stage with lights and a crowd */}
+      <section className="fade-up relative pb-24 pt-12 text-center sm:pb-28">
         <div
           className="pointer-events-none absolute inset-x-0 -top-6 h-96"
           style={{ background: "radial-gradient(60% 90% at 50% 0%, rgb(201 247 58 / 0.09), transparent 70%)" }}
         />
+        <StageLights />
         <p className="chip mx-auto border border-lime/40 bg-lime/10 text-lime">Genesis Draft · Season 1</p>
         <h1 className="display mx-auto mt-5 max-w-4xl text-5xl sm:text-7xl md:text-[92px]">
           100 Future Stars.
@@ -96,6 +98,7 @@ export default async function HomePage() {
             </Link>
           ) : null}
         </div>
+        <Crowd />
       </section>
 
       {/* Ticker tape (§0A.9: live buys scroll as ticker tape) */}
@@ -111,6 +114,24 @@ export default async function HomePage() {
           </div>
         </div>
       ) : null}
+
+      {/* How it works — three beats, three glyphs */}
+      <div className="fade-up mb-10 grid gap-3 sm:grid-cols-3">
+        {HOW.map((step, index) => (
+          <div key={step.title} className="card spotlight p-5" style={{ "--spot": step.spot } as React.CSSProperties}>
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${step.frame}`}>
+                {step.glyph}
+              </span>
+              <div>
+                <p className="stat text-[10px] uppercase tracking-widest text-muted">Step {index + 1}</p>
+                <h3 className={`display text-2xl ${step.tint}`}>{step.title}</h3>
+              </div>
+            </div>
+            <p className="mt-2 text-sm text-muted">{step.text}</p>
+          </div>
+        ))}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
@@ -167,7 +188,7 @@ export default async function HomePage() {
                 {launching.map((creator) => (
                   <TiltCard key={creator.id}>
                   <Link href={`/c/${creator.handle}`} className="card block p-5" style={{ "--glow": "rgb(201 247 58 / 0.2)" } as React.CSSProperties}>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                       <Monogram
                         name={creator.displayName}
                         src={creator.avatarUrl}
@@ -292,6 +313,51 @@ export default async function HomePage() {
     </div>
   );
 }
+
+const HOW = [
+  {
+    title: "Scout",
+    text: "Spot a rising creator and nominate them to the Draft Board — or pledge to someone already on it.",
+    tint: "text-volt",
+    frame: "border-volt/40 bg-volt/10 text-volt",
+    spot: "rgb(61 123 255 / 0.1)",
+    glyph: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="4.5" strokeDasharray="2.4 3" />
+        <path d="M12 12l5.5-5.5" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    title: "Back",
+    text: "When they claim, confirmed demand clears one opening auction — every market opens with a crowd.",
+    tint: "text-lime",
+    frame: "border-lime/40 bg-lime/10 text-lime",
+    spot: "rgb(201 247 58 / 0.1)",
+    glyph: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M3 19c4-1 6-3 7.5-7.5C12 7 15 4.5 21 4" strokeLinecap="round" />
+        <path d="M16.5 4H21v4.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 21h18" strokeLinecap="round" opacity="0.4" />
+      </svg>
+    ),
+  },
+  {
+    title: "Rise",
+    text: "Fund missions, unlock Backstage, climb the FameRace 100 — your early call is permanent proof.",
+    tint: "text-gold",
+    frame: "border-gold/40 bg-gold/10 text-gold",
+    spot: "rgb(240 195 60 / 0.1)",
+    glyph: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
+        <path d="M5 8l3.5 3L12 5l3.5 6L19 8l-1.2 9.5a2 2 0 0 1-2 1.5H8.2a2 2 0 0 1-2-1.5z" strokeLinejoin="round" />
+        <path d="M9.5 15h5" strokeLinecap="round" opacity="0.5" />
+      </svg>
+    ),
+  },
+] as const;
 
 function Scoreboard({
   label,

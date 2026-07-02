@@ -13,6 +13,8 @@ import { StreetTeamSection } from "./street-team";
 import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
+import { Backdrop } from "@/components/backdrop";
+import { CategoryGlyph } from "@/components/category-art";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
 import { Countdown } from "@/components/countdown";
@@ -150,12 +152,13 @@ export default async function CreatorPage({
       {flags.reported ? <Banner tone="chrome">Report received. Trust &amp; safety will review it.</Banner> : null}
       <FormError error={flags.error} />
 
-      {/* Hero (PRD §0B.7: a stage, not just a chart) */}
+      {/* Hero (PRD §0B.7: a stage, not just a chart) — their own art lights the room */}
       <div
-        className="card spotlight fade-up p-6"
+        className="card spotlight fade-up relative isolate overflow-hidden p-6"
         style={{ "--spot": creator.status === "LIVE" ? "rgb(201 247 58 / 0.13)" : "rgb(61 123 255 / 0.13)" } as React.CSSProperties}
       >
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <Backdrop name={creator.displayName} src={creator.avatarUrl} />
+        <div className="relative flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-5">
             <Monogram
               name={creator.displayName}
@@ -166,8 +169,10 @@ export default async function CreatorPage({
               className="mt-1"
             />
             <div>
-            <p className="stat text-sm text-muted">
-              {m ? `$${m.ticker}` : ""} · {CATEGORY_LABELS[creator.category]}
+            <p className="stat flex items-center gap-1.5 text-sm text-muted">
+              {m ? `$${m.ticker} · ` : ""}
+              <CategoryGlyph category={creator.category} className="h-3.5 w-3.5" />
+              {CATEGORY_LABELS[creator.category]}
             </p>
             <h1 className="display mt-1 text-6xl md:text-7xl">{creator.displayName}</h1>
             {creator.bio ? <p className="mt-2 max-w-xl text-chrome">{creator.bio}</p> : null}
@@ -426,7 +431,7 @@ export default async function CreatorPage({
           <section className="card p-6">
             <SectionTitle>Backer Wall</SectionTitle>
             <p className="mb-2 text-xs text-muted">Permanent proof of being early. First {num(500)} spots.</p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {overview.wall.length === 0 ? (
                 <p className="text-sm text-muted">The wall opens at launch.</p>
               ) : (
@@ -434,10 +439,13 @@ export default async function CreatorPage({
                   <Link
                     key={h.id}
                     href={`/u/${h.user.username}`}
-                    className="chip border border-gold/40 bg-gold/5 text-gold"
+                    className="flex items-center gap-1.5 rounded-md border border-gold/40 bg-gold/5 py-1 pl-1 pr-2 transition hover:border-gold"
                     title={`Backer #${h.backerRank}`}
                   >
-                    #{h.backerRank} @{h.user.username}
+                    <Monogram name={h.user.username} src={h.user.avatarUrl} size="sm" className="!h-6 !w-6 rounded !text-[9px]" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-gold">
+                      #{h.backerRank} @{h.user.username}
+                    </span>
                   </Link>
                 ))
               )}
