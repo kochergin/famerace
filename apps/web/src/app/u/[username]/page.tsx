@@ -62,10 +62,10 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <Monogram name={user.username} src={user.avatarUrl} size="xl" />
-          <div>
-          <h1 className="display text-5xl">@{user.username}</h1>
+          <div className="min-w-0">
+          <h1 className="display break-all text-3xl sm:text-5xl">@{user.username}</h1>
           <p className="mt-1 text-muted">
             {user.displayName} · joined {timeAgo(user.createdAt)}
             {crew ? (

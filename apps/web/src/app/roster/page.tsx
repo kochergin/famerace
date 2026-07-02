@@ -23,14 +23,14 @@ export default async function RosterPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="card spotlight fade-up flex flex-wrap items-center justify-between gap-6 p-6" style={{ "--spot": "rgb(201 247 58 / 0.1)" } as React.CSSProperties}>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           <Gauge
             score={taste?.score ?? 0}
             label="Taste Score"
             sub={taste ? `Rank #${num(taste.rank)}` : undefined}
           />
-          <div>
-            <h1 className="display text-5xl sm:text-6xl">My Roster</h1>
+          <div className="min-w-0">
+            <h1 className="display text-4xl sm:text-6xl">My Roster</h1>
             <p className="mt-2 max-w-sm text-sm text-muted">
               Find them early. Back their rise. This is the proof.
             </p>
