@@ -271,7 +271,7 @@ export async function matureGraduatedMarkets(): Promise<number> {
 
 /** All periodic jobs in one sweep — the admin button and the cron entrypoint. */
 export async function runSweeps() {
-  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved] =
+  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened] =
     await Promise.all([
       auctionMod.settleDueLaunches(),
       demandMod.expireStaleOrders(),
@@ -284,6 +284,7 @@ export async function runSweeps() {
       draftMod.snapshotDraftRanks(),
       matureGraduatedMarkets(),
       callsMod.resolveDueCalls(),
+      callsMod.ensureAutoCalls(),
     ]);
-  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved };
+  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened };
 }

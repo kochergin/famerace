@@ -78,11 +78,27 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
     }
     await tx.user.update({ where: { id: userId }, data: { points: { decrement: points } } });
     const stakeRow = await tx.callStake.create({ data: { callId, userId, side, points } });
+    const shareBefore = yesShare(call);
     const updated = await tx.call.update({
       where: { id: callId },
       data: side === "YES" ? { yesPoints: { increment: points } } : { noPoints: { increment: points } },
     });
     const share = yesShare(updated);
+
+    // The dopamine loop: when the majority flips, everyone in the call hears it.
+    if (shareBefore !== null && share !== null && shareBefore !== 0.5 && (shareBefore > 0.5) !== (share > 0.5)) {
+      const flippedTo = share > 0.5 ? "YES" : "NO";
+      const others = await tx.callStake.findMany({ where: { callId, userId: { not: userId } }, select: { userId: true } });
+      for (const other of others) {
+        await notify(tx, {
+          userId: other.userId,
+          type: "TASTE_SCORE_UPDATE",
+          title: `The internet flipped to ${flippedTo}`,
+          body: `"${call.question}" is now ${Math.round(share * 100)}% yes.`,
+          link: "/calls",
+        });
+      }
+    }
     publish({
       id: `stake-${stakeRow.id}`,
       type: "CALL_STAKED",
@@ -92,6 +108,66 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
     });
     return { stake: stakeRow, call: updated };
   });
+}
+
+/**
+ * Platform-authored calls so the board is never empty (sweep-driven,
+ * idempotent): every launch window and every fresh market gets a call.
+ */
+export async function ensureAutoCalls(now = new Date()): Promise<number> {
+  let created = 0;
+
+  // Launch-window calls: will they beat their backer threshold before launch?
+  const launching = await prisma.creator.findMany({
+    where: { status: "LAUNCHING_SOON", launchAt: { gt: now } },
+    include: { launchThreshold: true, calls: { where: { status: "OPEN", metric: "CONFIRMED_BACKERS" } } },
+  });
+  for (const creator of launching) {
+    if (!creator.launchThreshold || !creator.launchAt || creator.calls.length > 0) continue;
+    const stretch = Math.max(creator.launchThreshold.requiredBackers + 2, Math.ceil(creator.launchThreshold.confirmedBackers * 1.5));
+    await prisma.call.create({
+      data: {
+        creatorId: creator.id,
+        question: `Will ${creator.displayName} hit ${stretch} confirmed backers before launch?`,
+        metric: "CONFIRMED_BACKERS",
+        threshold: stretch,
+        deadline: creator.launchAt,
+        createdByUserId: creator.userId ?? creator.id,
+      },
+    });
+    created += 1;
+  }
+
+  // Fresh-market calls: will the crowd double inside the first week?
+  const fresh = await prisma.creatorMarket.findMany({
+    where: {
+      status: { in: ["GENESIS_CURVE", "GRADUATION"] },
+      createdAt: { gte: new Date(now.getTime() - 7 * 86_400_000) },
+    },
+    include: { creator: { include: { calls: { where: { status: "OPEN", metric: "HOLDER_COUNT" } } } } },
+  });
+  for (const market of fresh) {
+    if (market.creator.calls.length > 0) continue;
+    const stretch = Math.max(10, market.holderCount * 2);
+    await prisma.call.create({
+      data: {
+        creatorId: market.creatorId,
+        question: `Will ${market.creator.displayName} pass ${stretch} backers this week?`,
+        metric: "HOLDER_COUNT",
+        threshold: stretch,
+        deadline: new Date(now.getTime() + 72 * 3600_000),
+        createdByUserId: market.creator.userId ?? market.creatorId,
+      },
+    });
+    created += 1;
+  }
+  return created;
+}
+
+/** The call with the most conviction behind it — the homepage front door. */
+export async function hottestCall() {
+  const open = await openCalls(20);
+  return open.sort((a, b) => b.yesPoints + b.noPoints - (a.yesPoints + a.noPoints))[0] ?? null;
 }
 
 /** Current live value of a call's metric (all internal — objectively checkable). */

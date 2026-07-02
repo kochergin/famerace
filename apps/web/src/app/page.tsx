@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { copy, draft, missions as missionsMod, scores, streetteam } from "@famerace/core";
+import { calls as callsMod, copy, draft, missions as missionsMod, scores, streetteam } from "@famerace/core";
 import { prisma } from "@famerace/db";
+import { OddsBar } from "@/components/call-card";
 import { CountUp } from "@/components/count-up";
 import { Countdown } from "@/components/countdown";
 import { DraftCard } from "@/components/draft-card";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 /** Homepage = live command center (PRD §0B.5): a broadcast, not a website. */
 export default async function HomePage() {
-  const [user, scoreboard, liveCreators, launching, board, nearFunding, scouts, crews, tickerEvents] =
+  const [user, scoreboard, liveCreators, launching, board, nearFunding, scouts, crews, tickerEvents, hotCall] =
     await Promise.all([
       currentUser(),
       loadScoreboard(),
@@ -42,6 +43,7 @@ export default async function HomePage() {
         orderBy: { createdAt: "desc" },
         take: 14,
       }),
+      callsMod.hottestCall(),
     ]);
 
   const sparklines = new Map<string, number[]>();
@@ -263,6 +265,28 @@ export default async function HomePage() {
         </div>
 
         <div className="space-y-6">
+          {hotCall ? (
+            <Link
+              href="/calls"
+              className="card spotlight fade-up block p-4"
+              style={{ "--spot": "rgb(201 247 58 / 0.12)", "--glow": "rgb(201 247 58 / 0.3)" } as React.CSSProperties}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span className="stat text-[10px] uppercase tracking-widest text-muted">The internet says</span>
+                <span className="chip bg-lime/15 text-lime">LIVE CALL</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Monogram name={hotCall.creator.displayName} src={hotCall.creator.avatarUrl} size="sm" />
+                <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-chalk">{hotCall.question}</p>
+              </div>
+              <div className="mt-3">
+                <OddsBar yesPoints={hotCall.yesPoints} noPoints={hotCall.noPoints} />
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                {num(hotCall.yesPoints + hotCall.noPoints)} Taste Points staked — make the call →
+              </p>
+            </Link>
+          ) : null}
           <LiveFeed />
           {scouts.length > 0 ? (
             <section className="card fade-up p-4">

@@ -118,3 +118,43 @@ describe("calls: prediction layer", () => {
     expect(stakeRow.payout).toBe(80);
   });
 });
+
+describe("calls: auto-calls and flip alerts", () => {
+  beforeEach(resetDb);
+
+  it("ensureAutoCalls opens one call per fresh market, idempotently", async () => {
+    const owner = await makeUser({ roles: ["CREATOR"] });
+    const creator = await prisma.creator.create({
+      data: { userId: owner.id, displayName: "MIRA", handle: "mira", category: "MUSICIAN", status: "LIVE" },
+    });
+    await prisma.creatorMarket.create({
+      data: { creatorId: creator.id, ticker: "MIRA", status: "GENESIS_CURVE", priceCents: 100, holderCount: 3, supplyUnits: 100 },
+    });
+    expect(await callsMod.ensureAutoCalls()).toBe(1);
+    expect(await callsMod.ensureAutoCalls()).toBe(0); // idempotent
+    const call = await prisma.call.findFirstOrThrow({ where: { creatorId: creator.id } });
+    expect(call.metric).toBe("HOLDER_COUNT");
+    expect(call.threshold).toBe(10); // max(10, holders*2)
+  });
+
+  it("notifies existing stakers when the majority flips", async () => {
+    const owner = await makeUser({ roles: ["CREATOR"] });
+    const creator = await prisma.creator.create({
+      data: { userId: owner.id, displayName: "MIRA", handle: "mira", category: "MUSICIAN", fameScore: 30, status: "LIVE" },
+    });
+    const [a, b] = await Promise.all([makeUser(), makeUser()]);
+    await prisma.user.updateMany({ where: { id: { in: [a.id, b.id] } }, data: { points: 200 } });
+    const call = await callsMod.createCall(owner.id, {
+      creatorId: creator.id,
+      question: "Will MIRA hold a Fame Score of 25 through the weekend?",
+      metric: "FAME_SCORE",
+      threshold: 25,
+    });
+    await callsMod.stake(a.id, call.id, "YES", 40); // 100% yes
+    await callsMod.stake(b.id, call.id, "NO", 100); // flips majority to NO
+    const alerts = await prisma.notification.findMany({ where: { userId: a.id } });
+    expect(alerts.some((n) => n.title.includes("flipped to NO"))).toBe(true);
+    // No alert for the staker who caused the flip.
+    expect(await prisma.notification.count({ where: { userId: b.id } })).toBe(0);
+  });
+});

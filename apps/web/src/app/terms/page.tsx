@@ -28,7 +28,8 @@ export default function TermsPage() {
 
       <section className="card mt-6 p-6">
         <SectionTitle>Fees</SectionTitle>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-muted">
               <th className="pb-2">Revenue type</th>
@@ -82,6 +83,7 @@ export default function TermsPage() {
             </tr>
           </tbody>
         </table>
+        </div>
       </section>
 
       <section className="card mt-6 p-6">
