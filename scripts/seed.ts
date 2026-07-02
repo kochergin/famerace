@@ -179,6 +179,11 @@ async function main() {
   await prisma.matchFund.create({
     data: { seasonName: "Genesis Season", totalCents: 50_000_000, matchRatio: 0.25, creatorCap: 500_000 },
   });
+  // Draft Day mid-show for the demo: the reveal started a couple of minutes
+  // ago, so /draft-day lands on a live rank-by-rank broadcast.
+  await prisma.seasonConfig.create({
+    data: { name: "Genesis Season", active: true, draftDayAt: new Date(Date.now() - 2 * 60_000) },
+  });
 
   console.log("seed: MIRA claims and launches…");
   const mira = await claim.startClaim(miraUser.id, miraDraft.id);

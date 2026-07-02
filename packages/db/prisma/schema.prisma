@@ -1337,6 +1337,7 @@ model SeasonConfig {
   id                     String   @id @default(cuid())
   name                   String   @unique
   active                 Boolean  @default(true)
+  draftDayAt             DateTime?
   requiredBackers        Int      @default(250)
   requiredDemandCents    Int      @default(1000000)
   requiredPerksCount     Int      @default(3)

@@ -30,5 +30,7 @@ export * as launchkit from "./modules/launchkit";
 export * as media from "./modules/media";
 export * as recap from "./modules/recap";
 export type { SeasonRecap } from "./modules/recap";
+export * as draftday from "./modules/draftday";
+export type { DraftDayLineupRow, DraftDayState } from "./modules/draftday";
 export type { DraftBoardRow } from "./modules/draft";
 export type { DemandSummary } from "./modules/demand";

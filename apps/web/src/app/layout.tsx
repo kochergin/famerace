@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_ViewTransition as ViewTransition } from "react";
 import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import { copy, notify } from "@famerace/core";
+import { copy, draftday, notify } from "@famerace/core";
 import { currentUser } from "@/lib/session";
+import { Countdown } from "@/components/countdown";
 import { Monogram } from "@/components/monogram";
 import { NavLink } from "@/components/nav-link";
 import "./globals.css";
@@ -31,7 +32,10 @@ const NAV = [
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   const isAdmin = user?.roles.some((r) => r === "ADMIN" || r === "MODERATOR");
-  const unread = user ? await notify.unreadCount(user.id) : 0;
+  const [unread, draftDay] = await Promise.all([
+    user ? notify.unreadCount(user.id) : 0,
+    draftday.draftDayInfo(),
+  ]);
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
@@ -104,6 +108,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ))}
           </nav>
         </header>
+        {/* Draft Day strip: the whole app counts down to the same moment */}
+        {draftDay.state === "before" && draftDay.draftDayAt ? (
+          <Link
+            href="/draft-day"
+            className="block border-b border-lime/30 bg-lime/10 px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest text-lime transition hover:bg-lime/15"
+          >
+            Draft Day — the Genesis reveal in{" "}
+            <Countdown to={draftDay.draftDayAt.toISOString()} className="stat" /> · watch it live →
+          </Link>
+        ) : draftDay.state === "live" ? (
+          <Link
+            href="/draft-day"
+            className="block border-b border-pink/40 bg-pink/15 px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest text-pink transition hover:bg-pink/20"
+          >
+            <span className="pulse-soft mr-1.5 inline-block h-2 w-2 rounded-full bg-pink align-middle" />
+            Draft Day is live — the board is revealing now →
+          </Link>
+        ) : null}
         <main className="mx-auto max-w-6xl px-4 py-6">
           <ViewTransition>{children}</ViewTransition>
         </main>
