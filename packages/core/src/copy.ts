@@ -21,6 +21,9 @@ export const copy = {
     pledgeIfClaimed: "Pledge if claimed",
     claimProfile: "Claim your FameRace launch",
   },
+  /** Claim campaign message fans send to the creator (§0A.6 claim loop). */
+  claimCampaign: (name: string, fans: number, pledged: string) =>
+    `${name} — you've been drafted. ${fans} fans and ${pledged} in pledges are already waiting on your FameRace page. Claim your launch:`,
   /**
    * Mandatory risk disclosure (PRD §15.3). Rendered by the RiskDisclosure
    * component that wraps every purchase confirm button.

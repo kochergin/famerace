@@ -135,18 +135,71 @@ export default async function CreatorPage({
   const socials = Array.isArray(creator.socialLinks) ? (creator.socialLinks as string[]) : [];
   const tradeable = m && ["GENESIS_CURVE", "GRADUATION", "MATURE"].includes(m.status);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    mainEntity: {
+      "@type": "Person",
+      name: creator.displayName,
+      description: creator.bio ?? undefined,
+      image: creator.avatarUrl ? `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://famerace.fun"}${creator.avatarUrl}` : undefined,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://famerace.fun"}/c/${creator.handle}`,
+      sameAs: socials,
+    },
+  };
+
   return (
     <div className="mx-auto max-w-4xl">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {flags.backed || flags.pass ? <Confetti fireKey={flags.backed ? "backed" : "pass"} /> : null}
+      {/* Receipt interstitial: the proof-of-early moment IS the share moment */}
       {flags.backed ? (
-        <Banner tone="lime">
-          You backed {creator.displayName}
-          {flags.units ? ` — ${flags.units} units for $${flags.paid}` : ""}. Welcome to the rise. The
-          curve moves up as more people back, so early units cost less.
-        </Banner>
+        <div className="card spotlight story-in mb-4 border-lime/40 p-5" style={{ "--spot": "rgb(201 247 58 / 0.16)" } as React.CSSProperties}>
+          <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted">Receipt · permanent</p>
+          <p className="display mt-1 text-3xl">
+            You backed {creator.displayName}
+            {holding?.backerRank ? (
+              <>
+                {" "}— <span className="text-lime">backer #{holding.backerRank}</span>. Forever.
+              </>
+            ) : (
+              <span className="text-lime">.</span>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            {flags.units ? `${flags.units} units for $${flags.paid} · ` : ""}
+            Early units cost less — your timestamp is the proof.
+          </p>
+          <div className="mt-3">
+            <ShareRow
+              text={
+                holding?.backerRank
+                  ? `Backer #${holding.backerRank} of ${creator.displayName} on FameRace. Called it early. #BackTheRise`
+                  : `I just backed ${creator.displayName} on FameRace. #BackTheRise`
+              }
+              path={`/c/${handle}`}
+              cardPath={holding?.backerRank ? `/card/backer_wall/${handle}` : `/card/breakout/${handle}`}
+            />
+          </div>
+        </div>
+      ) : null}
+      {flags.pass && pass ? (
+        <div className="card spotlight story-in mb-4 border-gold/40 p-5" style={{ "--spot": "rgb(240 195 60 / 0.16)" } as React.CSSProperties}>
+          <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted">Genesis Pass · receipt</p>
+          <p className="display mt-1 text-3xl">
+            On the wall — <span className="text-gold">Genesis Backer #{pass.backerNumber}</span>.
+          </p>
+          <p className="mt-1 text-xs text-muted">First 500 spots only. Nobody can take the number.</p>
+          <div className="mt-3">
+            <ShareRow
+              text={`Genesis Backer #${pass.backerNumber} of ${creator.displayName} on FameRace. Before the world noticed. #BackTheRise`}
+              path={`/c/${handle}`}
+              cardPath={`/card/backer/${handle}`}
+            />
+          </div>
+        </div>
       ) : null}
       {flags.sold ? <Banner tone="chrome">Sold back to the curve. Your backer rank stays yours.</Banner> : null}
-      {flags.pass ? <Banner tone="gold">Genesis Pass secured — you are on the wall forever.</Banner> : null}
       {flags.messaged ? <Banner tone="chrome">Paid message sent — respond-to-earn, decline-to-refund.</Banner> : null}
       {flags.requested ? <Banner tone="gold">Request placed. Funds sit in escrow until delivery.</Banner> : null}
       {flags.reported ? <Banner tone="chrome">Report received. Trust &amp; safety will review it.</Banner> : null}

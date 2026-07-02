@@ -494,3 +494,19 @@ body::after {
     animation: none;
   }
 }
+
+/* Draft Day reactions float up the edge of the room */
+@keyframes react-float {
+  0% { transform: translateY(0) translateX(0) scale(0.8); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translateY(-70vh) translateX(var(--drift, 0px)) scale(1.25); opacity: 0; }
+}
+.react-float {
+  animation: react-float 3.5s cubic-bezier(0.2, 0.6, 0.4, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .react-float {
+    animation: none;
+    opacity: 0;
+  }
+}

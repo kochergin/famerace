@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { draftday } from "@famerace/core";
+import { DraftDayLive } from "@/components/draft-day-live";
 import { DraftDayShow, type ShowRow } from "@/components/draft-day-show";
 import { Crowd, StageLights } from "@/components/stage";
 import { EmptyState } from "@/components/ui";
@@ -59,6 +60,15 @@ export default async function DraftDayPage() {
         intervalMs={draftday.REVEAL_INTERVAL_MS}
         serverNowIso={new Date().toISOString()}
       />
+      <div className="mx-auto max-w-3xl">
+        <DraftDayLive />
+        <p className="mt-3 text-center text-[10px] uppercase tracking-widest text-muted">
+          Streaming the show?{" "}
+          <Link href="/draft-day/overlay" className="underline hover:text-chalk">
+            OBS overlay view →
+          </Link>
+        </p>
+      </div>
       <div className="relative mt-4 h-24">
         <Crowd />
       </div>

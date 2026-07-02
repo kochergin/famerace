@@ -8,6 +8,7 @@ import { CATEGORY_LABELS, money, num, timeAgo } from "@/lib/format";
 import { currentUser, requireCurrentUser } from "@/lib/session";
 import { PledgePanel } from "./pledge-panel";
 import { Backdrop } from "@/components/backdrop";
+import { ClaimKit } from "@/components/claim-kit";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
 import { ShareRow } from "@/components/share";
@@ -46,6 +47,14 @@ async function inviteAction(formData: FormData) {
   redirect(`/draft/${id}?invited=1`);
 }
 
+/** Silent invite credit when a fan fires the claim-campaign kit. */
+async function recordInviteQuiet(id: string) {
+  "use server";
+  const user = await currentUser();
+  if (!user) return;
+  await draft.recordInvite(user.id, id).catch(() => {});
+}
+
 export default async function DraftProfilePage({
   params,
   searchParams,
@@ -69,8 +78,21 @@ export default async function DraftProfilePage({
   const isPending = profile.moderationStatus === "PENDING";
   const claimed = profile.claimStatus === "CLAIMED" && profile.claimedCreator;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    mainEntity: {
+      "@type": "Person",
+      name: profile.nameOrHandle,
+      description: profile.reasonNominated ?? undefined,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://famerace.fun"}/draft/${profile.id}`,
+      ...(profile.externalLink ? { sameAs: [profile.externalLink] } : {}),
+    },
+  };
+
   return (
     <div className="mx-auto max-w-3xl">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {isPending ? (
         <p className="mb-4 rounded border border-chrome/30 bg-chrome/5 px-3 py-2 text-sm text-chrome">
           This nomination is awaiting moderation review — it is not on the public board yet.
@@ -84,9 +106,22 @@ export default async function DraftProfilePage({
       {pledged ? (
         <>
           <Confetti fireKey="pledged" />
-          <p className="mb-4 rounded border border-lime/30 bg-lime/5 px-3 py-2 text-sm text-lime">
-            Demand order placed. You will get a confirmation window before anything becomes binding.
-          </p>
+          <div className="card spotlight story-in mb-4 border-lime/40 p-5" style={{ "--spot": "rgb(201 247 58 / 0.16)" } as React.CSSProperties}>
+            <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted">Called it · receipt</p>
+            <p className="display mt-1 text-3xl">
+              You called <span className="text-lime">{profile.nameOrHandle}</span> early.
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Demand order placed — you get a confirmation window before anything becomes binding.
+            </p>
+            <div className="mt-3">
+              <ShareRow
+                text={`I just called ${profile.nameOrHandle} on the FameRace Draft — ${num(profile.fanCount)} fans waiting. Receipt says early. #BackTheRise`}
+                path={`/draft/${profile.id}`}
+                cardPath={`/card/draft_rank/${profile.id}/png`}
+              />
+            </div>
+          </div>
         </>
       ) : null}
       {error ? (
@@ -171,6 +206,26 @@ export default async function DraftProfilePage({
       </div>
 
       {!claimed ? <PledgePanel profile={profile} signedIn={Boolean(user)} /> : null}
+
+      {/* Claim campaign kit — fans pressure the claim; time-to-claim is the metric */}
+      {!claimed ? (
+        <section className="card mt-6 border-volt/40 p-5">
+          <SectionTitle>Get {profile.nameOrHandle} to claim</SectionTitle>
+          <p className="mb-3 text-xs text-muted">
+            The pot only unlocks when they claim. Send them the message — every send counts as an
+            invite on the scout wall.
+          </p>
+          <ClaimKit
+            message={copy.claimCampaign(
+              profile.nameOrHandle,
+              profile.fanCount,
+              money(profile.pledgedDemandTotal, { compact: true }),
+            )}
+            claimPath={`/claim/${profile.id}${user ? `?scout=${user.referralCode}` : ""}`}
+            onSend={recordInviteQuiet.bind(null, profile.id)}
+          />
+        </section>
+      ) : null}
 
       <section className="mt-6">
         <SectionTitle>Scout wall</SectionTitle>

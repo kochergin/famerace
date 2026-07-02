@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CountUp } from "@/components/count-up";
 import { Confetti } from "@/components/confetti";
 import { Monogram, gradientPair } from "@/components/monogram";
+import { RecapVideoButton } from "@/components/recap-video";
 
 /* Season Recap story player (PRD §0B "Spotify Wrapped" energy):
    full-screen slides, tap/arrow navigation, auto-advance, share outro. */
@@ -106,7 +107,7 @@ export function RecapStory({ slides, username }: { slides: RecapSlide[]; usernam
 
       {/* slide */}
       <div key={index} className="story-in relative mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 text-center">
-        <SlideBody slide={slide} />
+        <SlideBody slide={slide} allSlides={slides} username={username} />
       </div>
       {last ? <Confetti fireKey={`recap-${username}`} /> : null}
     </div>
@@ -121,7 +122,15 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="stat mb-4 text-xs uppercase tracking-[0.25em] text-muted">{children}</p>;
 }
 
-function SlideBody({ slide }: { slide: RecapSlide }) {
+function SlideBody({
+  slide,
+  allSlides,
+  username,
+}: {
+  slide: RecapSlide;
+  allSlides: RecapSlide[];
+  username: string;
+}) {
   switch (slide.kind) {
     case "cover":
       return (
@@ -267,6 +276,7 @@ function SlideBody({ slide }: { slide: RecapSlide }) {
             <span className="text-pink">Share the story.</span>
           </Big>
           <div className="relative z-20 mt-8 flex flex-wrap justify-center gap-2">
+            <RecapVideoButton slides={allSlides} username={username} />
             <a
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("My FameRace season so far — found them early, backed the rise. #BackTheRise")}`}
               target="_blank"
