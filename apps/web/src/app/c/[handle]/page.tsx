@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { calls as callsMod, copy, market as marketMod, supporters as supportersMod } from "@famerace/core";
+import { battles as battlesMod, calls as callsMod, copy, market as marketMod, supporters as supportersMod } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import type { CallSide } from "@famerace/db";
 import { FormError } from "@/components/form-error";
-import { RiskDisclosure, SectionTitle, Stat, StatusChip } from "@/components/ui";
+import { FuelBar, RiskDisclosure, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { CATEGORY_LABELS, money, num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
@@ -14,7 +14,9 @@ import { StreetTeamSection } from "./street-team";
 import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
+import { Arena, nextRoom } from "@/components/arena";
 import { Backdrop } from "@/components/backdrop";
+import { BattleStrip } from "@/components/battle-strip";
 import { BackBox } from "@/components/back-box";
 import { CallCard } from "@/components/call-card";
 import { LivePulse } from "@/components/live-pulse";
@@ -160,10 +162,14 @@ export default async function CreatorPage({
   const perks = Array.isArray(creator.perks) ? (creator.perks as string[]) : [];
   const socials = Array.isArray(creator.socialLinks) ? (creator.socialLinks as string[]) : [];
   const tradeable = m && ["GENESIS_CURVE", "GRADUATION", "MATURE"].includes(m.status);
-  const [openCalls, topSupporters] = await Promise.all([
+  const [openCalls, topSupporters, battle, seatCount, unlocks] = await Promise.all([
     callsMod.callsForCreator(creator.id),
     supportersMod.topSupporters(creator.id),
+    battlesMod.battleForCreator(creator.id),
+    battlesMod.supporterCount(creator.id),
+    battlesMod.unlocksFor(creator.id),
   ]);
+  const nextUnlock = unlocks.find((u) => !u.unlocked);
   const myCallStakes = user ? await callsMod.stakesFor(user.id, openCalls.map((c) => c.id)) : new Map();
 
   const jsonLd = {
@@ -285,12 +291,27 @@ export default async function CreatorPage({
         </div>
 
         {creator.status === "LAUNCHING_SOON" && creator.launchAt ? (
-          <div className="mt-6 rounded border border-lime/40 bg-lime/5 p-4 text-center">
-            <p className="text-xs uppercase tracking-widest text-muted">Launching in</p>
+          <div className="mt-6 rounded border border-lime/40 bg-lime/5 p-5 text-center">
+            <p className="stat text-[10px] uppercase tracking-[0.3em] text-lime">The campaign · all or nothing</p>
             <Countdown to={creator.launchAt.toISOString()} className="display mt-1 block text-6xl text-lime" />
-            <p className="mt-2 text-sm text-muted">
-              Opening auction clears all confirmed demand through one fair fill. No snipers, no empty
-              launches — every market opens with a crowd.
+            {creator.launchThreshold ? (
+              <div className="mx-auto mt-4 max-w-md">
+                <div className="flex items-baseline justify-between text-xs">
+                  <span className="stat font-bold text-chalk">
+                    {num(creator.launchThreshold.confirmedBackers)} / {num(creator.launchThreshold.requiredBackers)} backers confirmed
+                  </span>
+                  <span className="stat text-muted">
+                    {Math.max(0, creator.launchThreshold.requiredBackers - creator.launchThreshold.confirmedBackers)} to go
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  <FuelBar value={creator.launchThreshold.confirmedBackers} max={creator.launchThreshold.requiredBackers} />
+                </div>
+              </div>
+            ) : null}
+            <p className="mx-auto mt-3 max-w-md text-sm text-muted">
+              Opening auction clears all confirmed demand through one fair fill. Miss the threshold and
+              every pledge is released — no empty launches, ever.
             </p>
           </div>
         ) : null}
@@ -320,6 +341,42 @@ export default async function CreatorPage({
           />
         </div>
       </div>
+
+      {battle ? (
+        <div className="mt-6">
+          <BattleStrip battle={battle} focusHandle={handle} />
+        </div>
+      ) : null}
+
+      {/* The arena, public: the collective goal every new backer moves */}
+      {creator.status === "LIVE" && (seatCount > 0 || nextUnlock) ? (
+        <section className="card spotlight mt-6 p-5" style={{ "--spot": "rgb(201 247 58 / 0.1)" } as React.CSSProperties}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle>The arena</SectionTitle>
+            <p className="stat text-xs text-muted">
+              <span className="font-bold text-lime">{num(seatCount)}</span> {seatCount === 1 ? "seat" : "seats"} lit
+              {nextRoom(seatCount) ? <> · next room: <span className="font-bold text-gold">{nextRoom(seatCount)!.label}</span></> : null}
+            </p>
+          </div>
+          <Arena lit={seatCount} className="mx-auto w-full max-w-md" />
+          {nextUnlock ? (
+            <div className="mt-2 rounded border border-gold/40 bg-gold/10 px-3 py-2.5 text-center">
+              <p className="text-sm text-chalk">
+                🔓 At <span className="stat font-bold text-gold">{num(nextUnlock.atSeats)}</span> seats{" "}
+                {creator.displayName} unlocks: <span className="font-bold">{nextUnlock.title}</span>
+              </p>
+              <p className="stat mt-0.5 text-[11px] uppercase tracking-widest text-muted">
+                {Math.max(0, nextUnlock.atSeats - seatCount)} seats to go — every backer counts
+              </p>
+            </div>
+          ) : null}
+          {unlocks.filter((u) => u.unlocked).length > 0 ? (
+            <p className="mt-2 text-center text-xs text-muted">
+              Already unlocked by this crowd: {unlocks.filter((u) => u.unlocked).map((u) => u.title).join(" · ")}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {creator.story ? (
         <section className="card mt-6 p-6">

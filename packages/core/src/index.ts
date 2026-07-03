@@ -35,6 +35,7 @@ export * as calls from "./modules/calls";
 export * as supporters from "./modules/supporters";
 export * as wallet from "./modules/wallet";
 export * as advance from "./modules/advance";
+export * as battles from "./modules/battles";
 export type { DraftDayLineupRow, DraftDayState } from "./modules/draftday";
 export type { DraftBoardRow } from "./modules/draft";
 export type { DemandSummary } from "./modules/demand";

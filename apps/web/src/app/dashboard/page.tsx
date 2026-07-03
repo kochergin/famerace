@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { advance as advanceMod, claim, copy } from "@famerace/core";
+import { advance as advanceMod, battles as battlesMod, claim, copy } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Arena, nextRoom } from "@/components/arena";
@@ -27,6 +27,20 @@ async function advanceAction() {
   });
   revalidatePath("/dashboard");
   redirect(`/dashboard?advanced=${cents}`);
+}
+
+async function unlockAction(formData: FormData) {
+  "use server";
+  const user = await requireCurrentUser();
+  await withErrorRedirect("/dashboard", async () => {
+    await battlesMod.setUnlock(
+      user.id,
+      Math.round(Number(formData.get("atSeats") || 0)),
+      String(formData.get("title") ?? ""),
+    );
+  });
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 async function verifyAction(formData: FormData) {
@@ -168,6 +182,7 @@ export default async function DashboardPage({
     }),
   ]);
   const seatCount = new Set([...holderIds, ...passIds].map((r) => r.userId)).size;
+  const unlocks = await battlesMod.unlocksFor(creator.id);
   const lifetimeEarnedCents = earnedAgg._sum.deltaCents ?? 0;
 
   // First-dollar ceremony: fires exactly once — the notification row is the flag.
@@ -277,7 +292,15 @@ export default async function DashboardPage({
       {creator.status === "LIVE" || seatCount > 0 ? (
         <section className="card spotlight mt-4 p-5" style={{ "--spot": "rgb(201 247 58 / 0.1)" } as React.CSSProperties}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <SectionTitle>Your arena</SectionTitle>
+            <SectionTitle
+              right={
+                <a href={`/card/momentum/${creator.handle}/png`} target="_blank" className="text-xs uppercase text-muted hover:text-lime">
+                  Momentum report ↓
+                </a>
+              }
+            >
+              Your arena
+            </SectionTitle>
             <p className="stat text-xs text-muted">
               <span className="font-bold text-lime">{num(seatCount)}</span> {seatCount === 1 ? "seat" : "seats"} lit
               {nextRoom(seatCount) ? (
@@ -293,6 +316,44 @@ export default async function DashboardPage({
           {nextRoom(seatCount) ? (
             <FuelBar value={seatCount} max={nextRoom(seatCount)!.at} />
           ) : null}
+          {/* Collective unlocks: give the crowd a named goal — they'll do the inviting */}
+          <div className="mt-4 border-t border-edge pt-3">
+            {unlocks.length > 0 ? (
+              <ul className="mb-3 space-y-1 text-sm">
+                {unlocks.map((u) => (
+                  <li key={u.id} className="flex items-center justify-between gap-2">
+                    <span className={u.unlocked ? "text-muted line-through" : "text-chalk"}>
+                      {u.unlocked ? "🔓" : "🔒"} {u.title}
+                    </span>
+                    <span className="stat shrink-0 text-xs text-muted">at {num(u.atSeats)} seats</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <form action={unlockAction} className="flex flex-wrap items-center gap-2">
+              <input
+                name="title"
+                placeholder="At the next room I'll unlock… (e.g. unreleased demo)"
+                required
+                className="min-w-0 flex-1 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk placeholder:text-muted focus:border-lime focus:outline-none"
+              />
+              <input
+                name="atSeats"
+                type="number"
+                min={1}
+                defaultValue={nextRoom(seatCount)?.at ?? 10}
+                required
+                className="w-20 rounded border border-edge bg-ink px-2.5 py-2 text-sm text-chalk focus:border-lime focus:outline-none"
+                title="Seats"
+              />
+              <SubmitButton pendingLabel="Promising…" className="rounded bg-gold px-3 py-2 text-xs font-bold uppercase tracking-wide text-ink hover:brightness-110">
+                Promise it
+              </SubmitButton>
+            </form>
+            <p className="mt-1.5 text-[11px] text-muted">
+              The promise shows on your public page — your crowd does the inviting to unlock it.
+            </p>
+          </div>
         </section>
       ) : null}
 

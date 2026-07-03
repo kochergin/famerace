@@ -286,6 +286,41 @@ export async function buildCard(template: CardTemplate, subjectRef: string, view
         ],
       };
     }
+    case "MOMENTUM": {
+      // The negotiation weapon: provable momentum for labels, brands, agents.
+      const creator = await prisma.creator.findUnique({
+        where: { handle: subjectRef },
+        include: { market: true },
+      });
+      if (!creator) throw notFound("Creator");
+      const weekAgo = new Date(Date.now() - 7 * 24 * 3600_000);
+      const [holders, passes, newHolders, earned] = await Promise.all([
+        creator.market
+          ? prisma.holding.findMany({ where: { creatorMarketId: creator.market.id, amountUnits: { gt: 0 } }, select: { userId: true } })
+          : Promise.resolve([] as { userId: string }[]),
+        prisma.genesisPass.findMany({ where: { creatorId: creator.id }, select: { userId: true } }),
+        creator.market
+          ? prisma.holding.count({ where: { creatorMarketId: creator.market.id, firstBackedAt: { gte: weekAgo } } })
+          : Promise.resolve(0),
+        prisma.ledgerEntry.aggregate({
+          where: { account: "CREATOR_EARNED", creatorId: creator.id, deltaCents: { gt: 0 } },
+          _sum: { deltaCents: true },
+        }),
+      ]);
+      const backers = new Set([...holders, ...passes].map((r) => r.userId)).size;
+      return {
+        accent: COLORS.lime,
+        kicker: "Momentum report · live numbers",
+        headline: creator.displayName,
+        sub: `Fame Score ${creator.fameScore} · verified by the crowd, not claimed`,
+        stats: [
+          { label: "Backers", value: String(backers) },
+          { label: "New this week", value: `+${newHolders}` },
+          { label: "Crowd revenue", value: dollars(earned._sum.deltaCents ?? 0) },
+        ],
+        footer: "famerace.fun — the price of the rise",
+      };
+    }
     case "CALLED_IT": {
       const stakeRow = await prisma.callStake.findFirst({
         where: { callId: subjectRef, userId: viewerUserId, settled: true, payout: { gt: 0 } },

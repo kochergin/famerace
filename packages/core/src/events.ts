@@ -1,4 +1,4 @@
-import type { Db, EventType, EventVisibility, Prisma } from "@famerace/db";
+import { prisma, type Db, type EventType, type EventVisibility, type Prisma } from "@famerace/db";
 import { publish } from "./bus";
 
 /**
@@ -42,8 +42,10 @@ export async function emitEvent(
     };
     publish(feedEvent);
     // Cross-instance fan-out: LISTEN famerace_events re-publishes on peers
-    // (instrumentation.ts). Best-effort — local delivery already happened.
-    void db
+    // (instrumentation.ts). Uses the GLOBAL client, not the passed tx — a tx
+    // client may already be committed by the time this fires, and best-effort
+    // display events don't need transactional delivery.
+    void prisma
       .$executeRaw`SELECT pg_notify('famerace_events', ${JSON.stringify(feedEvent)})`
       .catch(() => undefined);
   }

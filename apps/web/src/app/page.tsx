@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { calls as callsMod, copy, draft, missions as missionsMod, scores, streetteam } from "@famerace/core";
+import { battles as battlesMod, calls as callsMod, copy, draft, missions as missionsMod, scores, streetteam } from "@famerace/core";
 import { prisma } from "@famerace/db";
+import { BattleStrip } from "@/components/battle-strip";
 import { OddsBar } from "@/components/call-card";
 import { CountUp } from "@/components/count-up";
 import { Countdown } from "@/components/countdown";
@@ -19,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 /** Homepage = live command center (PRD §0B.5): a broadcast, not a website. */
 export default async function HomePage() {
-  const [user, scoreboard, liveCreators, launching, board, nearFunding, scouts, crews, tickerEvents, hotCall] =
+  const [user, scoreboard, liveCreators, launching, board, nearFunding, scouts, crews, tickerEvents, hotCall, battles] =
     await Promise.all([
       currentUser(),
       loadScoreboard(),
@@ -45,6 +46,7 @@ export default async function HomePage() {
         take: 14,
       }),
       callsMod.hottestCall(),
+      battlesMod.openBattles(),
     ]);
 
   const sparklines = new Map<string, number[]>();
@@ -278,6 +280,7 @@ export default async function HomePage() {
         </div>
 
         <div className="space-y-6">
+          {battles[0] ? <BattleStrip battle={battles[0]} /> : null}
           {hotCall ? (
             <Link
               href="/calls"

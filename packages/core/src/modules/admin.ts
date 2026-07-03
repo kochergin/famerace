@@ -6,6 +6,7 @@ import { assertTransition, audit, CREATOR_TRANSITIONS } from "../statemachine";
 import * as auctionMod from "./auction";
 import * as backstageMod from "./backstage";
 import * as callsMod from "./calls";
+import * as battlesMod from "./battles";
 import * as demandMod from "./demand";
 import * as draftMod from "./draft";
 import * as missionsMod from "./missions";
@@ -271,7 +272,7 @@ export async function matureGraduatedMarkets(): Promise<number> {
 
 /** All periodic jobs in one sweep — the admin button and the cron entrypoint. */
 export async function runSweeps() {
-  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened] =
+  const [settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened, battlesResolved, battlesOpened, unlocksFlipped] =
     await Promise.all([
       auctionMod.settleDueLaunches(),
       demandMod.expireStaleOrders(),
@@ -285,6 +286,9 @@ export async function runSweeps() {
       matureGraduatedMarkets(),
       callsMod.resolveDueCalls(),
       callsMod.ensureAutoCalls(),
+      battlesMod.resolveDueBattles(),
+      battlesMod.ensureBattle(),
+      battlesMod.checkUnlocks(),
     ]);
-  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened };
+  return { settled, expiredOrders, expiredMissions, memberships, crews, taste, fame, wash, rankChanges, matured, callsResolved, callsOpened, battlesResolved, battlesOpened, unlocksFlipped };
 }

@@ -379,6 +379,7 @@ enum CardTemplate {
   TASTE_SCORE
   CREW
   CALLED_IT
+  MOMENTUM
 }
 
 enum NotificationType {
@@ -802,6 +803,44 @@ model Holding {
 // purchase with the 80/12/8 creator/platform/scout split. Distinct from curve
 // units so the market reserve stays fully backed — pass revenue goes to the
 // creator, curve deposits stay in MARKET_RESERVE.
+/* Fandom wars: two creators, one deadline, whose crowd grows faster.
+   Scores are NEW distinct supporters gained during the window (derived at
+   resolve time from baselines captured at open). */
+model Battle {
+  id         String       @id @default(cuid())
+  creatorAId String
+  creatorBId String
+  aBaseline  Int
+  bBaseline  Int
+  aFinal     Int?
+  bFinal     Int?
+  winnerId   String?
+  status     BattleStatus @default(OPEN)
+  startsAt   DateTime     @default(now())
+  endsAt     DateTime
+  createdAt  DateTime     @default(now())
+
+  @@index([status, endsAt])
+}
+
+enum BattleStatus {
+  OPEN
+  SETTLED
+}
+
+/* Collective unlocks: "fill the Club (25 seats) and I drop the demo for
+   everyone". The promise is public; the flip to UNLOCKED notifies backers. */
+model ArenaUnlock {
+  id        String   @id @default(cuid())
+  creatorId String
+  atSeats   Int
+  title     String
+  unlocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([creatorId, atSeats])
+}
+
 model GenesisPass {
   id           String   @id @default(cuid())
   userId       String

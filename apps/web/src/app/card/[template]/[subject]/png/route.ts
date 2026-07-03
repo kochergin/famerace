@@ -19,6 +19,7 @@ const TEMPLATES = new Set([
   "TASTE_SCORE",
   "CREW",
   "CALLED_IT",
+  "MOMENTUM",
 ]);
 
 /**
