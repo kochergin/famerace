@@ -317,7 +317,7 @@ function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: strin
           <form action={buyDropAction} className="mt-3">
             <input type="hidden" name="handle" value={handle} />
             <input type="hidden" name="dropId" value={drop.id} />
-            <SubmitButton pendingLabel="Funding…" className="w-full rounded bg-lime px-3 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+            <SubmitButton pendingLabel="Funding…" className="w-full rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
               Unlock
             </SubmitButton>
           </form>

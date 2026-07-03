@@ -57,6 +57,21 @@ body::before {
   color: var(--color-ink);
 }
 
+/* One keyboard-focus language everywhere; no gray mobile tap flash */
+:focus-visible {
+  outline: 2px solid var(--color-lime);
+  outline-offset: 2px;
+}
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Fields signal focus with their lime border instead of a second ring */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-edge) transparent;

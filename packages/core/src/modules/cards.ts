@@ -63,10 +63,10 @@ function renderSvg(content: CardContent): string {
   <text x="80" y="${130 + headlineSize + 40}" font-family="Arial Narrow, Arial, sans-serif" font-size="${headlineSize}" font-weight="900" letter-spacing="1" fill="${COLORS.chalk}">${esc(headline.toUpperCase())}</text>
   ${sub ? `<text x="80" y="${130 + headlineSize + 100}" font-family="Arial, sans-serif" font-size="30" fill="${COLORS.muted}">${esc(sub)}</text>` : ""}
   ${statBlocks}
-  <!-- brand: the sparkline that becomes a star -->
-  <g transform="translate(78 ${H - 92})">
-    <path d="M2 34 L12 25 L17 29 L26 17" stroke="${COLORS.lime}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <path d="M30 2 L32.2 8.3 L38.5 10.5 L32.2 12.7 L30 19 L27.8 12.7 L21.5 10.5 L27.8 8.3 Z" fill="${COLORS.lime}"/>
+  <!-- brand: the Star Flag -->
+  <g transform="translate(76 ${H - 96}) scale(0.62)">
+    <path fill-rule="evenodd" fill="${COLORS.lime}" d="M13 8 C 28 0, 40 16, 59 5 L 59 36 C 44 47, 32 31, 13 39 Z M33.45,10.57 L38.49,17.89 L47.19,16.12 L41.79,23.17 L46.15,30.90 L37.78,27.94 L31.78,34.48 L32.01,25.61 L23.93,21.92 L32.44,19.39 Z"/>
+    <rect x="8" y="4" width="5.5" height="56" rx="2.75" fill="${COLORS.lime}"/>
   </g>
   <text x="128" y="${H - 56}" font-family="Arial Narrow, Arial, sans-serif" font-size="30" font-weight="900" letter-spacing="3" fill="${COLORS.chalk}">FAME<tspan fill="${COLORS.lime}">RACE</tspan></text>
   <text x="330" y="${H - 56}" font-family="Arial, sans-serif" font-size="26" fill="${accent}">— ${esc(footer ?? "Back the rise.")}</text>

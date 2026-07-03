@@ -119,7 +119,7 @@ export default async function EarningsPage({
           required
           className="w-44 rounded border border-edge bg-ink px-3 py-2.5 text-sm text-chalk placeholder:text-muted focus:border-lime focus:outline-none"
         />
-        <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+        <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Withdraw
         </SubmitButton>
         <p className="w-full text-xs text-muted">

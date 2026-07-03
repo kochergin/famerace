@@ -48,7 +48,7 @@ export function ClaimCeremony({
 
       {beat === 0 ? (
         <div key="b0" className="story-in">
-          <LogoMark className="mx-auto mb-6 h-10 w-10" />
+          <LogoMark glow className="mx-auto mb-6 h-10 w-10" />
           <p className="stat text-xs uppercase tracking-[0.35em] text-muted">FameRace · Genesis Season</p>
           <h1 className="display mt-4 text-5xl leading-tight sm:text-7xl">
             THE INTERNET

@@ -139,7 +139,7 @@ export default async function StreetTeamDashboard({
                 <form action={reviewAction}>
                   <input type="hidden" name="completionId" value={completion.id} />
                   <input type="hidden" name="decision" value="APPROVED" />
-                  <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">Approve</SubmitButton>
+                  <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">Approve</SubmitButton>
                 </form>
                 <form action={reviewAction}>
                   <input type="hidden" name="completionId" value={completion.id} />

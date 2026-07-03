@@ -131,7 +131,7 @@ export function DraftDayShow({
           </p>
           <Link
             href={spotlight.creator ? `/c/${spotlight.creator.handle}` : `/draft/${spotlight.draftId}`}
-            className="mt-5 inline-block rounded bg-lime px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110"
+            className="mt-5 inline-block rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110"
           >
             {spotlight.claimed ? "Open their stage" : "Back them first"}
           </Link>

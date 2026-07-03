@@ -172,7 +172,7 @@ export default async function InboxPage({
                   <form action={requestAction}>
                     <input type="hidden" name="orderId" value={order.id} />
                     <input type="hidden" name="decision" value="deliver" />
-                    <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1 text-xs font-bold uppercase text-ink">
+                    <SubmitButton pendingLabel="Working…" className="rounded bg-lime px-3 py-1.5 text-xs font-bold uppercase text-ink">
                       Delivered
                     </SubmitButton>
                   </form>

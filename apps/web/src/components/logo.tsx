@@ -1,33 +1,29 @@
-/* The FameRace mark: a sparkline that becomes a star. One dip (the comeback),
-   a steep ascent, and a four-point star where the line leaves the chart —
-   the whole product in one glyph: back the rise, a star is born. */
+/* The FameRace mark: the Star Flag. A race flag flying at full speed with a
+   five-point star cut out of it in negative space — fame (the star), the race
+   (the flag), and the product's core act (planting your flag on someone's
+   rise) in one solid glyph. One color, one shape, readable at 16px. */
 
-export function LogoMark({ className = "h-7 w-7" }: { className?: string }) {
+export const MARK_FLAG_PATH =
+  "M13 8 C 28 0, 40 16, 59 5 L 59 36 C 44 47, 32 31, 13 39 Z " +
+  "M33.45,10.57 L38.49,17.89 L47.19,16.12 L41.79,23.17 L46.15,30.90 L37.78,27.94 " +
+  "L31.78,34.48 L32.01,25.61 L23.93,21.92 L32.44,19.39 Z";
+
+export function LogoMark({
+  className = "h-7 w-7",
+  glow = false,
+}: {
+  className?: string;
+  glow?: boolean;
+}) {
   return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden fill="none">
-      {/* pink echo trail — the hype behind the rise */}
-      <path
-        d="M12 52 L26 40 L33 46 L46 26"
-        stroke="#ff3d8d"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.55"
-      />
-      {/* the ascent */}
-      <path
-        d="M8 56 L24 42 L31 48 L45 28"
-        stroke="#c9f73a"
-        strokeWidth="6.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* the star it becomes */}
-      <path
-        d="M50 4 L53.4 13.6 L63 17 L53.4 20.4 L50 30 L46.6 20.4 L37 17 L46.6 13.6 Z"
-        fill="#c9f73a"
-        style={{ filter: "drop-shadow(0 0 6px rgb(201 247 58 / 0.7))" }}
-      />
+    <svg
+      viewBox="0 0 64 64"
+      className={className}
+      aria-hidden
+      style={glow ? { filter: "drop-shadow(0 0 8px rgb(201 247 58 / 0.55))" } : undefined}
+    >
+      <path fillRule="evenodd" fill="#c9f73a" d={MARK_FLAG_PATH} />
+      <rect x="8" y="4" width="5.5" height="56" rx="2.75" fill="#c9f73a" />
     </svg>
   );
 }

@@ -73,7 +73,7 @@ export default async function WalletPage({
         <p className="mt-2 text-xs text-muted">Spends instantly everywhere on FameRace. No gas, ever.</p>
         {faucetOn ? (
           <form action={faucetAction} className="mt-4">
-            <SubmitButton pendingLabel="Funding…" className="rounded bg-lime px-5 py-2.5 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
+            <SubmitButton pendingLabel="Funding…" className="rounded bg-lime px-4 py-2 text-sm font-bold uppercase tracking-wide text-ink hover:brightness-110">
               + Add $100 (demo)
             </SubmitButton>
           </form>

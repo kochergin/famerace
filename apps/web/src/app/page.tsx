@@ -61,7 +61,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero + scoreboard (PRD §0A.8) — a stage with lights and a crowd */}
-      <section className="fade-up relative pb-24 pt-12 text-center sm:pb-28">
+      <section className="fade-up relative pb-24 pt-8 text-center sm:pb-28 sm:pt-12">
         <div
           className="pointer-events-none absolute inset-x-0 -top-6 h-96"
           style={{ background: "radial-gradient(60% 90% at 50% 0%, rgb(201 247 58 / 0.09), transparent 70%)" }}
@@ -77,14 +77,14 @@ export default async function HomePage() {
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{copy.oneLiner}</p>
 
-        <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+        <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-6 sm:mt-10 sm:grid-cols-4">
           <Scoreboard label="Pledged" cents value={scoreboard.pledgedCents} accent="text-lime" />
           <Scoreboard label="Early backers" value={scoreboard.backers} accent="text-chalk" />
           <Scoreboard label="Creators claimed" value={scoreboard.claimed} accent="text-volt" />
           <Scoreboard label="Missions funded" value={scoreboard.missionsFunded} accent="text-gold" />
         </div>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3 sm:mt-10">
           <Link
             href="/draft"
             className="rounded bg-lime px-6 py-3 font-bold uppercase tracking-wide text-ink shadow-[0_0_28px_rgba(201,247,58,0.35)] transition hover:brightness-110"
@@ -245,7 +245,7 @@ export default async function HomePage() {
               <SectionTitle right={<Link href="/missions" className="text-xs uppercase text-muted hover:text-chalk">All missions →</Link>}>
                 Missions near funding
               </SectionTitle>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className={`grid gap-3 ${nearFunding.length === 1 ? "" : nearFunding.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
                 {nearFunding.map((mission) => {
                   const pct = Math.min(100, Math.round((mission.fundedCents / mission.goalCents) * 100));
                   return (

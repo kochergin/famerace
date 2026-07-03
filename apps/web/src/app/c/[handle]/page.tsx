@@ -324,10 +324,10 @@ export default async function CreatorPage({
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {/* Back (buy) — §0B.8 trade sheet */}
         {tradeable && m ? (
-          <section className="card p-6">
+          <section className="card flex flex-col p-6">
             <SectionTitle>{copy.cta.back(creator.displayName)}</SectionTitle>
             {user ? (
-              <form action={backAction} className="space-y-3">
+              <form action={backAction} className="flex flex-1 flex-col gap-3">
                 <input type="hidden" name="handle" value={handle} />
                 <input type="hidden" name="marketId" value={m.id} />
                 <div className="flex flex-wrap gap-2">
@@ -353,13 +353,15 @@ export default async function CreatorPage({
                   <li>Permanent backer rank on first back</li>
                   <li>Holder-gated Backstage eligibility</li>
                 </ul>
-                <RiskDisclosure
-                  confirmLabel={copy.cta.back(creator.displayName)}
-                  feeLine={copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}
-                />
+                <div className="mt-auto">
+                  <RiskDisclosure
+                    confirmLabel={copy.cta.back(creator.displayName)}
+                    feeLine={copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}
+                  />
+                </div>
               </form>
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-1 flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   {[2500, 10000, 50000].map((cents) => (
                     <span key={cents} className="stat inline-block rounded border border-edge px-4 py-2 text-sm font-bold text-muted">
@@ -373,7 +375,7 @@ export default async function CreatorPage({
                   <li>Holder-gated Backstage eligibility</li>
                 </ul>
                 <p className="text-xs text-chrome">{copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}</p>
-                <Link href="/join" className="block rounded bg-lime px-4 py-3 text-center font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(201,247,58,0.3)] transition hover:brightness-110">
+                <Link href="/join" className="mt-auto block rounded bg-lime px-4 py-3 text-center font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(201,247,58,0.3)] transition hover:brightness-110">
                   Join to back
                 </Link>
               </div>
@@ -412,14 +414,14 @@ export default async function CreatorPage({
 
         {/* Genesis Pass */}
         {creator.status === "LIVE" ? (
-          <section className="card p-6">
+          <section className="card flex flex-col p-6">
             <SectionTitle>{copy.cta.becomeGenesisBacker}</SectionTitle>
             {pass ? (
               <p className="rounded border border-gold/40 bg-gold/10 p-3 text-sm text-gold">
                 Genesis Backer #{pass.backerNumber} — permanent Day One status.
               </p>
             ) : user ? (
-              <form action={passAction} className="space-y-3">
+              <form action={passAction} className="flex flex-1 flex-col gap-3">
                 <input type="hidden" name="handle" value={handle} />
                 <input type="hidden" name="creatorId" value={creator.id} />
                 <div className="flex flex-wrap gap-2">
@@ -445,10 +447,12 @@ export default async function CreatorPage({
                     ))}
                   </ul>
                 ) : null}
-                <RiskDisclosure confirmLabel="Secure Genesis Pass" />
+                <div className="mt-auto">
+                  <RiskDisclosure confirmLabel="Secure Genesis Pass" />
+                </div>
               </form>
             ) : (
-              <div className="space-y-3">
+              <div className="flex flex-1 flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   {[
                     { cents: 2500, label: "Starter Backer" },
@@ -469,7 +473,7 @@ export default async function CreatorPage({
                     ))}
                   </ul>
                 ) : null}
-                <Link href="/join" className="block rounded bg-gold px-4 py-3 text-center font-bold uppercase tracking-wide text-ink transition hover:brightness-110">
+                <Link href="/join" className="mt-auto block rounded bg-gold px-4 py-3 text-center font-bold uppercase tracking-wide text-ink transition hover:brightness-110">
                   Join to become a Genesis Backer
                 </Link>
               </div>
@@ -484,7 +488,7 @@ export default async function CreatorPage({
           <SectionTitle right={<Link href="/calls" className="text-xs uppercase text-muted hover:text-lime">All calls →</Link>}>
             The internet says
           </SectionTitle>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className={`grid gap-3 ${openCalls.length === 1 ? "" : "md:grid-cols-2"}`}>
             {openCalls.map((call) => (
               <CallCard
                 key={call.id}
@@ -551,7 +555,7 @@ export default async function CreatorPage({
                     className="flex items-center gap-1.5 rounded-md border border-gold/40 bg-gold/5 py-1 pl-1 pr-2 transition hover:border-gold"
                     title={`Backer #${h.backerRank}`}
                   >
-                    <Monogram name={h.user.username} src={h.user.avatarUrl} size="sm" className="!h-6 !w-6 rounded !text-[9px]" />
+                    <Monogram name={h.user.username} src={h.user.avatarUrl} size="sm" className="!h-6 !w-6 rounded !text-[10px]" />
                     <span className="text-[11px] font-bold uppercase tracking-wider text-gold">
                       #{h.backerRank} @{h.user.username}
                     </span>
