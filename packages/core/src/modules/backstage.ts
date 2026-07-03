@@ -2,7 +2,7 @@ import { prisma, type BackstagePost } from "@famerace/db";
 import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
 import { audit } from "../statemachine";
 import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
@@ -55,19 +55,18 @@ export async function subscribe(userId: string, tierId: string) {
     }
   }
 
-  if (tier.accessType === "PAID" && tier.priceCents > 0) {
-    const auth = await paymentProvider.authorize({ userId, amountCents: tier.priceCents, purpose: "backstage" });
-    await paymentProvider.capture(auth.authRef);
-  }
-
-  return prisma.$transaction(async (tx) => {
+  const paid = tier.accessType === "PAID" && tier.priceCents > 0;
+  // Charge only if the membership commits — an ALREADY_MEMBER throw inside the
+  // tx releases the hold instead of silently keeping the fan's money.
+  const run = () =>
+    prisma.$transaction(async (tx) => {
     const existing = await tx.backstageMembership.findUnique({
       where: { userId_creatorId: { userId, creatorId: tier.creatorId } },
     });
     if (existing && existing.status === "ACTIVE") {
       throw new DomainError("ALREADY_MEMBER", "You are already in this Backstage");
     }
-    if (tier.accessType === "PAID" && tier.priceCents > 0) {
+    if (paid) {
       const creatorCents = Math.floor((tier.priceCents * config.backstage.creatorBps) / 10_000);
       await postLedgerTx(
         tx,
@@ -103,6 +102,9 @@ export async function subscribe(userId: string, tierId: string) {
     });
     return membership;
   });
+  return paid
+    ? withHeldCharge({ userId, amountCents: tier.priceCents, purpose: "backstage" }, run)
+    : run();
 }
 
 export async function cancelMembership(userId: string, creatorId: string) {

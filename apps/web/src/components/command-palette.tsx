@@ -48,6 +48,9 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (!open || !query.trim()) {
+      // Bump seq here too, or an in-flight fetch from the previous query can
+      // still land and repopulate results under the now-empty/changed query.
+      seq.current += 1;
       setResults([]);
       return;
     }
@@ -89,7 +92,7 @@ export function CommandPalette() {
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") {
                 e.preventDefault();
-                setActive((a) => Math.min(a + 1, results.length - 1));
+                setActive((a) => Math.min(a + 1, Math.max(0, results.length - 1)));
               } else if (e.key === "ArrowUp") {
                 e.preventDefault();
                 setActive((a) => Math.max(a - 1, 0));

@@ -3,7 +3,7 @@ import { config } from "../config";
 import { buyCostCents, sellProceedsCents, spotPriceCents, unitsForBudget } from "../curve";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
 import { assertTransition, audit, MARKET_TRANSITIONS } from "../statemachine";
 import { postLedgerTx } from "./ledger";
 import { moneyTx } from "../tx";
@@ -164,6 +164,11 @@ async function buyInner(userId: string, marketId: string, spendCents: number) {
         where: { id: existing.id },
         data: { amountUnits: totalUnits, avgEntryCents: newAvg },
       });
+      // A re-buy through a sold-out (0-unit) holding is a returning holder —
+      // holderCount was decremented on sell-out, so re-increment it now.
+      if (existing.amountUnits === 0) {
+        await tx.creatorMarket.update({ where: { id: marketId }, data: { holderCount: { increment: 1 } } });
+      }
     } else {
       await tx.holding.create({
         data: {
@@ -322,13 +327,12 @@ async function sellInner(userId: string, marketId: string, units: number) {
  * One per user per creator; permanent backer number → Backer Wall.
  */
 export async function purchaseGenesisPass(userId: string, creatorId: string, tierCents: number) {
-  if (!config.backTiersCents.includes(tierCents as never) && tierCents < 500) {
+  if (!Number.isInteger(tierCents) || tierCents < 500 || tierCents > 1_000_000) {
     throw new DomainError("BAD_TIER", "Pick a pass tier of at least $5");
   }
-  const auth = await paymentProvider.authorize({ userId, amountCents: tierCents, purpose: "genesis_pass" });
-  await paymentProvider.capture(auth.authRef);
-  return moneyTx(async (tx) =>
-    issueGenesisPassInTx(tx, userId, creatorId, tierCents),
+  // Charge only if the pass issues — ALREADY_PASSED/NOT_LIVE releases the hold.
+  return withHeldCharge({ userId, amountCents: tierCents, purpose: "genesis_pass" }, () =>
+    moneyTx((tx) => issueGenesisPassInTx(tx, userId, creatorId, tierCents)),
   );
 }
 

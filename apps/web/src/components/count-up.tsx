@@ -15,22 +15,29 @@ export function CountUp({
   className?: string;
 }) {
   const [display, setDisplay] = useState(value);
-  const done = useRef(false);
+  const from = useRef(0);
 
   useEffect(() => {
-    if (done.current) return;
-    done.current = true;
-    if (value === 0) return;
+    // Animate from wherever we were to the new value — the first mount rolls up
+    // from 0, and later prop changes (e.g. after a faucet revalidate) animate to
+    // the new number instead of freezing on the stale one.
+    const target = value;
+    const startValue = from.current;
+    if (startValue === target) {
+      setDisplay(target);
+      return;
+    }
     const duration = 900;
     const start = performance.now();
     let frame: number;
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(Math.round(value * eased));
+      setDisplay(Math.round(startValue + (target - startValue) * eased));
       if (progress < 1) frame = requestAnimationFrame(tick);
+      else from.current = target;
     };
-    setDisplay(0);
+    setDisplay(startValue);
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [value]);

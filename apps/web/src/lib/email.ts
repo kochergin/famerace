@@ -25,8 +25,12 @@ export async function sendEmailToUser(
   if (!user?.email || user.notificationsMuted) return;
   const key = process.env.RESEND_API_KEY;
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? "https://famerace.fun";
-  const html = `<div style="font-family:sans-serif"><h2>${payload.title}</h2><p>${payload.body ?? ""}</p>${
-    payload.link ? `<p><a href="${base}${payload.link}">Open FameRace →</a></p>` : ""
+  // Titles and bodies carry user-controlled strings (display names, call
+  // questions) — escape them or the email becomes an HTML injection sink.
+  const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const safeLink = payload.link && payload.link.startsWith("/") ? payload.link : null;
+  const html = `<div style="font-family:sans-serif"><h2>${esc(payload.title)}</h2><p>${esc(payload.body ?? "")}</p>${
+    safeLink ? `<p><a href="${base}${esc(safeLink)}">Open FameRace →</a></p>` : ""
   }<p style="color:#888;font-size:12px">FameRace — Back the rise.</p></div>`;
   if (!key) {
     console.info(`[email:dev] to=${user.email} subject="${payload.title}"`);

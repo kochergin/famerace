@@ -192,7 +192,7 @@ export default async function HomePage() {
                       </div>
                       {sparklines.has(creator.id) ? (
                         <div className="mt-3 border-t border-edge pt-3">
-                          <Sparkline points={sparklines.get(creator.id)!} width={560} height={44} className="w-full" />
+                          <Sparkline points={sparklines.get(creator.id)!} width={560} height={44} className="w-full" gradientId={`spark-${creator.id}`} />
                         </div>
                       ) : null}
                     </Link>

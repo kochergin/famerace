@@ -34,22 +34,27 @@ export function LivePulse({ creatorId }: { creatorId: string }) {
   const [toasts, setToasts] = useState<FeedEvent[]>([]);
   const mountedAt = useRef(Date.now());
   const lastRefresh = useRef(0);
+  // Persistent id set so /api/feed's replay-on-reconnect never re-toasts or
+  // re-refreshes for events we've already seen this mount.
+  const seen = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    const timers = new Set<ReturnType<typeof setTimeout>>();
     const source = new EventSource("/api/feed");
     source.onmessage = (message) => {
       try {
         const event = JSON.parse(message.data) as FeedEvent;
         if (event.creatorId !== creatorId) return;
-        // Skip the replay burst — only genuinely-live moments toast.
+        // Skip the replay burst and anything already handled (survives reconnects).
         if (Date.parse(event.createdAt) < mountedAt.current - 5_000) return;
-        setToasts((current) => {
-          if (current.some((t) => t.id === event.id)) return current;
-          return [...current, event].slice(-3);
-        });
-        setTimeout(() => {
+        if (seen.current.has(event.id)) return;
+        seen.current.add(event.id);
+        setToasts((current) => [...current, event].slice(-3));
+        const timer = setTimeout(() => {
+          timers.delete(timer);
           setToasts((current) => current.filter((t) => t.id !== event.id));
         }, 6_500);
+        timers.add(timer);
         if (REFRESH_TYPES.has(event.type) && Date.now() - lastRefresh.current > 4_000) {
           lastRefresh.current = Date.now();
           router.refresh();
@@ -58,7 +63,10 @@ export function LivePulse({ creatorId }: { creatorId: string }) {
         // ignore malformed frames
       }
     };
-    return () => source.close();
+    return () => {
+      source.close();
+      timers.forEach(clearTimeout);
+    };
   }, [creatorId, router]);
 
   if (toasts.length === 0) return null;

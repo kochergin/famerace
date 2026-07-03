@@ -127,11 +127,16 @@ export default async function StreetTeamDashboard({
                 </span>
                 {completion.proofRef ? (
                   <>
-                    {" "}
-                    ·{" "}
-                    <a href={completion.proofRef} target="_blank" rel="noreferrer nofollow" className="text-lime underline">
-                      proof ↗
-                    </a>
+                    {" "}·{" "}
+                    {/^https?:\/\//i.test(completion.proofRef) ? (
+                      // Only http(s) becomes a link — javascript:/data: refs render as text
+                      // (a fan-submitted proofRef must not become an href XSS sink).
+                      <a href={completion.proofRef} target="_blank" rel="noreferrer nofollow" className="text-lime underline">
+                        proof ↗
+                      </a>
+                    ) : (
+                      <span className="text-muted">proof: {completion.proofRef}</span>
+                    )}
                   </>
                 ) : null}
               </span>

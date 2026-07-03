@@ -1,7 +1,7 @@
 import { prisma } from "@famerace/db";
 import { z } from "zod";
 import { DomainError, notFound } from "../errors";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
 import { audit } from "../statemachine";
 import { postLedgerTx } from "./ledger";
 import { notify } from "./notify";
@@ -50,10 +50,8 @@ export async function orderItem(userId: string, itemId: string) {
   if (!item || !item.available) throw notFound("Request item");
   if (item.creator.status !== "LIVE") throw new DomainError("NOT_LIVE", "Requests open when the creator is live");
 
-  const auth = await paymentProvider.authorize({ userId, amountCents: item.priceCents, purpose: "request" });
-  await paymentProvider.capture(auth.authRef);
-
-  return prisma.$transaction(async (tx) => {
+  return withHeldCharge({ userId, amountCents: item.priceCents, purpose: "request" }, () =>
+  prisma.$transaction(async (tx) => {
     const ledgerTxId = await postLedgerTx(
       tx,
       "MESSAGE_FEE",
@@ -77,7 +75,8 @@ export async function orderItem(userId: string, itemId: string) {
     }
     await audit(tx, { actorId: userId, action: "REQUEST_ORDERED", objectType: "RequestOrder", objectId: order.id });
     return order;
-  });
+  }),
+  );
 }
 
 export async function acceptOrder(creatorUserId: string, orderId: string) {
@@ -92,9 +91,12 @@ export async function deliverOrder(creatorUserId: string, orderId: string) {
       include: { item: { include: { creator: true } } },
     });
     if (!order || order.item.creator.userId !== creatorUserId) throw notFound("Request order");
-    if (order.status !== "REQUESTED" && order.status !== "ACCEPTED") {
-      throw new DomainError("BAD_STATE", `Order is ${order.status.toLowerCase()}`);
-    }
+    // Atomic claim: concurrent deliver+refund can't both release escrow.
+    const claimed = await tx.requestOrder.updateMany({
+      where: { id: orderId, status: { in: ["REQUESTED", "ACCEPTED"] } },
+      data: { status: "DELIVERED" },
+    });
+    if (claimed.count === 0) throw new DomainError("BAD_STATE", `Order is ${order.status.toLowerCase()}`);
     const price = order.item.priceCents;
     const platformCents = Math.floor((price * REQUEST_PLATFORM_BPS) / 10_000);
     await postLedgerTx(
@@ -107,7 +109,7 @@ export async function deliverOrder(creatorUserId: string, orderId: string) {
       ],
       { kind: "request_delivered", orderId },
     );
-    const updated = await tx.requestOrder.update({ where: { id: orderId }, data: { status: "DELIVERED" } });
+    const updated = await tx.requestOrder.findUniqueOrThrow({ where: { id: orderId } });
     await notify(tx, {
       userId: order.userId,
       type: "PAYOUT_UPDATE",
@@ -143,9 +145,12 @@ async function refundOrderInner(creatorUserId: string, orderId: string) {
       include: { item: { include: { creator: true } } },
     });
     if (!order || order.item.creator.userId !== creatorUserId) throw notFound("Request order");
-    if (order.status === "DELIVERED" || order.status === "REFUNDED") {
-      throw new DomainError("BAD_STATE", `Order is ${order.status.toLowerCase()}`);
-    }
+    // Atomic claim: concurrent deliver+refund can't both release escrow.
+    const claimed = await tx.requestOrder.updateMany({
+      where: { id: orderId, status: { notIn: ["DELIVERED", "REFUNDED"] } },
+      data: { status: "REFUNDED" },
+    });
+    if (claimed.count === 0) throw new DomainError("BAD_STATE", `Order is ${order.status.toLowerCase()}`);
     await postLedgerTx(
       tx,
       "REFUND",
@@ -155,7 +160,7 @@ async function refundOrderInner(creatorUserId: string, orderId: string) {
       ],
       { kind: "request_refund", orderId },
     );
-    const updated = await tx.requestOrder.update({ where: { id: orderId }, data: { status: "REFUNDED" } });
+    const updated = await tx.requestOrder.findUniqueOrThrow({ where: { id: orderId } });
     const refundShape = { ...updated, refundedCents: order.item.priceCents };
     await notify(tx, {
       userId: order.userId,

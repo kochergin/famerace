@@ -3,7 +3,8 @@ import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
+import { moneyTx } from "../tx";
 import { assertTransition, audit, MISSION_TRANSITIONS } from "../statemachine";
 import { notify } from "./notify";
 import { recomputeThresholdInTx } from "./claim";
@@ -122,9 +123,12 @@ export async function contribute(
   if (!Number.isInteger(amountCents) || amountCents < 100) {
     throw new DomainError("BAD_AMOUNT", "Minimum contribution is $1");
   }
-  const auth = await paymentProvider.authorize({ userId, amountCents, purpose: "mission" });
-  await paymentProvider.capture(auth.authRef);
-  return prisma.$transaction(async (tx) => contributeInTx(tx, userId, missionId, amountCents, tierLabel));
+  // Charge only if the contribution commits (release on NOT_LIVE/EXPIRED), and
+  // run under moneyTx (SERIALIZABLE + retry) so concurrent contributions can't
+  // lose an update on fundedCents.
+  return withHeldCharge({ userId, amountCents, purpose: "mission" }, () =>
+    moneyTx((tx) => contributeInTx(tx, userId, missionId, amountCents, tierLabel)),
+  );
 }
 
 async function contributeInTx(
@@ -188,11 +192,13 @@ async function contributeInTx(
       });
     }
   }
-  const funded = mission.fundedCents + amountCents + matchCents;
-  await tx.mission.update({
+  // Increment (not absolute write) so concurrent contributions compose instead
+  // of clobbering; the returned row gives the authoritative post-increment total.
+  const afterContribution = await tx.mission.update({
     where: { id: missionId },
-    data: { fundedCents: funded, matchCents: { increment: matchCents } },
+    data: { fundedCents: { increment: amountCents + matchCents }, matchCents: { increment: matchCents } },
   });
+  const funded = afterContribution.fundedCents;
   await emitEvent(tx, {
     type: "MISSION_CONTRIBUTION",
     actorId: userId,
@@ -252,6 +258,13 @@ export async function startWork(userId: string, missionId: string) {
     const mission = await tx.mission.findUnique({ where: { id: missionId }, include: { creator: true } });
     if (!mission || mission.creator.userId !== userId) throw notFound("Mission");
     assertTransition("mission", MISSION_TRANSITIONS, mission.status, "IN_PROGRESS");
+    // Atomic claim: a concurrent/double startWork finds count 0 and bails,
+    // so escrow is released exactly once.
+    const claim = await tx.mission.updateMany({
+      where: { id: missionId, status: "FUNDED" },
+      data: { status: "IN_PROGRESS" },
+    });
+    if (claim.count === 0) throw new DomainError("ALREADY_STARTED", "This mission's escrow was already released");
 
     const escrow = mission.fundedCents;
     const feeCents = Math.floor((escrow * config.mission.platformFeeBps) / 10_000);
@@ -265,7 +278,6 @@ export async function startWork(userId: string, missionId: string) {
       ],
       { kind: "mission_release", missionId },
     );
-    await tx.mission.update({ where: { id: missionId }, data: { status: "IN_PROGRESS" } });
     await audit(tx, { actorId: userId, action: "MISSION_STARTED", objectType: "Mission", objectId: missionId });
     return tx.mission.findUniqueOrThrow({ where: { id: missionId } });
   });
@@ -274,7 +286,13 @@ export async function startWork(userId: string, missionId: string) {
 export const updateSchema = z.object({
   title: z.string().min(3).max(120),
   body: z.string().min(10).max(3000),
-  proofUrl: z.string().url().max(300).optional().or(z.literal("")),
+  proofUrl: z
+    .string()
+    .url()
+    .max(300)
+    .refine((u) => /^https?:\/\//i.test(u), "Link must start with http(s)://")
+    .optional()
+    .or(z.literal("")),
 });
 
 export async function postUpdate(userId: string, missionId: string, input: z.infer<typeof updateSchema>) {
@@ -330,8 +348,14 @@ export async function expireMissions(now = new Date()): Promise<number> {
         await tx.mission.update({ where: { id }, data: { status: "PARTIALLY_FUNDED" } });
         return;
       }
-      // ALL_OR_NOTHING: refund every contribution from escrow.
+      // ALL_OR_NOTHING: refund every contribution from escrow. Atomic claim
+      // first so a racing sweep can't double-refund the same contributions.
       assertTransition("mission", MISSION_TRANSITIONS, mission.status, "EXPIRED");
+      const claimed = await tx.mission.updateMany({
+        where: { id, status: "LIVE" },
+        data: { status: "EXPIRED" },
+      });
+      if (claimed.count === 0) return;
       const contributions = await tx.missionContribution.findMany({ where: { missionId: id, refunded: false } });
       for (const contribution of contributions) {
         await postLedgerTx(
@@ -362,7 +386,7 @@ export async function expireMissions(now = new Date()): Promise<number> {
           data: { spentCents: { decrement: BigInt(matchReturned) } },
         });
       }
-      await tx.mission.update({ where: { id }, data: { status: "EXPIRED", fundedCents: 0, matchCents: 0 } });
+      await tx.mission.update({ where: { id }, data: { fundedCents: 0, matchCents: 0 } });
       await audit(tx, {
         actorType: "SYSTEM",
         action: "MISSION_EXPIRED_REFUNDED",

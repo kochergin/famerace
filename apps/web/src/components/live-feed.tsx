@@ -40,7 +40,11 @@ export function LiveFeed({ limit = 14 }: { limit?: number }) {
         const event = JSON.parse(message.data) as FeedEvent;
         setEvents((current) => {
           if (current.some((e) => e.id === event.id)) return current;
-          return [event, ...current].slice(0, limit);
+          // Insert by recency, not blindly on top: after a reconnect the server
+          // replays old events, which must not jump above newer ones.
+          return [event, ...current]
+            .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+            .slice(0, limit);
         });
       } catch {
         // ignore malformed frames

@@ -2,7 +2,7 @@ import { prisma } from "@famerace/db";
 import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
 import { audit } from "../statemachine";
 import { postLedgerTx } from "./ledger";
 import { notify } from "./notify";
@@ -28,10 +28,8 @@ export async function sendPaidMessage(userId: string, input: z.input<typeof send
   }
   enforceProhibited("message", data.body); // abuse controls (§9.10)
 
-  const auth = await paymentProvider.authorize({ userId, amountCents: data.priceCents, purpose: "paid_message" });
-  await paymentProvider.capture(auth.authRef);
-
-  return prisma.$transaction(async (tx) => {
+  return withHeldCharge({ userId, amountCents: data.priceCents, purpose: "paid_message" }, () =>
+  prisma.$transaction(async (tx) => {
     const ledgerTxId = await postLedgerTx(
       tx,
       "MESSAGE_FEE",
@@ -61,7 +59,8 @@ export async function sendPaidMessage(userId: string, input: z.input<typeof send
     }
     await audit(tx, { actorId: userId, action: "PAID_MESSAGE_SENT", objectType: "PaidMessage", objectId: message.id });
     return message;
-  });
+  }),
+  );
 }
 
 /** Creator responds: pending amount splits 80/20 creator/platform (§12.2). */
@@ -73,9 +72,12 @@ export async function respondToMessage(creatorUserId: string, messageId: string,
       include: { creator: true },
     });
     if (!message || message.creator.userId !== creatorUserId) throw notFound("Message");
-    if (message.status !== "SENT" && message.status !== "ACCEPTED") {
-      throw new DomainError("ALREADY_HANDLED", `Message is already ${message.status.toLowerCase()}`);
-    }
+    // Atomic claim: concurrent respond+reject can't both move the escrow.
+    const claimed = await tx.paidMessage.updateMany({
+      where: { id: messageId, status: { in: ["SENT", "ACCEPTED"] } },
+      data: { status: "RESPONDED", response: response.trim() },
+    });
+    if (claimed.count === 0) throw new DomainError("ALREADY_HANDLED", `Message is already ${message.status.toLowerCase()}`);
     const creatorCents = Math.floor((message.priceCents * config.paidMessages.creatorBps) / 10_000);
     await postLedgerTx(
       tx,
@@ -87,10 +89,7 @@ export async function respondToMessage(creatorUserId: string, messageId: string,
       ],
       { kind: "paid_message_earned", messageId },
     );
-    const updated = await tx.paidMessage.update({
-      where: { id: messageId },
-      data: { status: "RESPONDED", response: response.trim() },
-    });
+    const updated = await tx.paidMessage.findUniqueOrThrow({ where: { id: messageId } });
     await notify(tx, {
       userId: message.fromUserId,
       type: "PAYOUT_UPDATE",
@@ -126,9 +125,12 @@ async function rejectMessageInner(creatorUserId: string, messageId: string) {
       include: { creator: true },
     });
     if (!message || message.creator.userId !== creatorUserId) throw notFound("Message");
-    if (message.status !== "SENT") {
-      throw new DomainError("ALREADY_HANDLED", `Message is already ${message.status.toLowerCase()}`);
-    }
+    // Atomic claim: concurrent respond+reject can't both move the escrow.
+    const claimed = await tx.paidMessage.updateMany({
+      where: { id: messageId, status: "SENT" },
+      data: { status: "REFUNDED" },
+    });
+    if (claimed.count === 0) throw new DomainError("ALREADY_HANDLED", `Message is already ${message.status.toLowerCase()}`);
     await postLedgerTx(
       tx,
       "REFUND",
@@ -138,10 +140,7 @@ async function rejectMessageInner(creatorUserId: string, messageId: string) {
       ],
       { kind: "paid_message_refund", messageId },
     );
-    const updated = await tx.paidMessage.update({
-      where: { id: messageId },
-      data: { status: "REFUNDED" },
-    });
+    const updated = await tx.paidMessage.findUniqueOrThrow({ where: { id: messageId } });
     await notify(tx, {
       userId: message.fromUserId,
       type: "PAYOUT_UPDATE",

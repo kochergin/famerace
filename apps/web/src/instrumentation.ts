@@ -40,19 +40,24 @@ export async function register(): Promise<void> {
     // no listener connection (e.g. build step) — local bus still works
   }
 
-  // 3. Sweeps every minute, single-runner via advisory lock
+  // 3. Sweeps every minute, single-runner via a TRANSACTION-scoped advisory
+  //    lock. A session-scoped lock on a pooled client is a trap: lock and
+  //    unlock can land on different pooled connections, the unlock no-ops,
+  //    and the cron silently wedges after the first tick. The xact lock
+  //    lives and dies with one interactive transaction spanning the sweep.
   const SWEEP_LOCK = 894_213_007;
   setInterval(async () => {
     try {
       const { prisma } = await import("@famerace/db");
-      const [{ locked }] = await prisma.$queryRaw<[{ locked: boolean }]>`
-        SELECT pg_try_advisory_lock(${SWEEP_LOCK}) AS locked`;
-      if (!locked) return;
-      try {
-        await admin.runSweeps();
-      } finally {
-        await prisma.$queryRaw`SELECT pg_advisory_unlock(${SWEEP_LOCK})`;
-      }
+      await prisma.$transaction(
+        async (tx) => {
+          const [{ locked }] = await tx.$queryRaw<[{ locked: boolean }]>`
+            SELECT pg_try_advisory_xact_lock(${SWEEP_LOCK}) AS locked`;
+          if (!locked) return; // another instance is sweeping
+          await admin.runSweeps();
+        },
+        { timeout: 55_000 },
+      );
     } catch {
       // next tick retries
     }

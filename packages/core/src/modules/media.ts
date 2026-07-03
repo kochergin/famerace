@@ -211,6 +211,32 @@ export async function readAssetBytes(asset: { bytes: Uint8Array | null; path: st
   return null;
 }
 
+/**
+ * Read ONLY a byte range of an asset — video seeking must not load the whole
+ * 64MB file per request. `end` inclusive; caller guarantees bounds.
+ */
+export async function readAssetRange(
+  asset: { bytes: Uint8Array | null; path: string | null },
+  start: number,
+  end: number,
+): Promise<Buffer | null> {
+  if (asset.bytes && asset.bytes.length > 0) return Buffer.from(asset.bytes.subarray(start, end + 1));
+  if (!asset.path) return null;
+  try {
+    const handle = await fs.open(asset.path, "r");
+    try {
+      const length = end - start + 1;
+      const buffer = Buffer.alloc(length);
+      const { bytesRead } = await handle.read(buffer, 0, length, start);
+      return buffer.subarray(0, bytesRead);
+    } finally {
+      await handle.close();
+    }
+  } catch {
+    return null;
+  }
+}
+
 /** mime per media URL (for rendering <img> vs <video> vs <audio>). */
 export async function mimesForUrls(urls: string[]): Promise<Map<string, string>> {
   const ids = urls.map((u) => u.match(/^\/img\/([a-z0-9]+)$/)?.[1]).filter((x): x is string => Boolean(x));

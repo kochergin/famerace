@@ -3,7 +3,7 @@ import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
 import { emitEvent } from "../events";
-import { paymentProvider } from "../payments";
+import { paymentProvider, withHeldCharge } from "../payments";
 import { audit } from "../statemachine";
 import { notify } from "./notify";
 import { postLedgerTx } from "./ledger";
@@ -55,10 +55,10 @@ export async function purchaseDrop(userId: string, dropId: string) {
   const drop = await prisma.drop.findUnique({ where: { id: dropId } });
   if (!drop || drop.status === "DRAFT" || drop.status === "REMOVED") throw notFound("Drop");
   if (drop.status === "SOLD_OUT") throw new DomainError("SOLD_OUT", "This drop is sold out");
-  const auth = await paymentProvider.authorize({ userId, amountCents: drop.priceCents, purpose: "drop" });
-  await paymentProvider.capture(auth.authRef);
-
-  return moneyTx(async (tx) => {
+  // Charge only if the unlock commits — SOLD_OUT/ALREADY_OWNED/DROP_CLOSED
+  // throws release the hold instead of keeping the fan's money.
+  return withHeldCharge({ userId, amountCents: drop.priceCents, purpose: "drop" }, () =>
+  moneyTx(async (tx) => {
     const fresh = await tx.drop.findUniqueOrThrow({ where: { id: dropId } });
     if (fresh.status !== "LIVE") throw new DomainError("DROP_CLOSED", "This drop is no longer available");
     if (fresh.quantityLimit && fresh.soldCount >= fresh.quantityLimit) {
@@ -95,16 +95,17 @@ export async function purchaseDrop(userId: string, dropId: string) {
       },
     });
     return purchase;
-  });
+  }),
+  );
 }
 
 export async function tip(userId: string, creatorId: string, amountCents: number, message?: string, isPublic = true) {
   if (!Number.isInteger(amountCents) || amountCents < 100) {
     throw new DomainError("BAD_AMOUNT", "Minimum tip is $1");
   }
-  const auth = await paymentProvider.authorize({ userId, amountCents, purpose: "tip" });
-  await paymentProvider.capture(auth.authRef);
-  return moneyTx(async (tx) => {
+  // Charge only if the tip commits — a creator-not-LIVE throw releases it.
+  return withHeldCharge({ userId, amountCents, purpose: "tip" }, () =>
+  moneyTx(async (tx) => {
     const creator = await tx.creator.findUnique({ where: { id: creatorId } });
     if (!creator || creator.status !== "LIVE") throw notFound("Creator");
     const creatorCents = Math.floor((amountCents * config.tips.creatorBps) / 10_000);
@@ -131,5 +132,6 @@ export async function tip(userId: string, creatorId: string, amountCents: number
         });
     }
     return tipRow;
-  });
+  }),
+  );
 }

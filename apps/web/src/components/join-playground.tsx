@@ -29,6 +29,17 @@ function slugify(name: string): string {
     .slice(0, 20);
 }
 
+/* Live username sanitizer: keeps interior AND trailing underscores so you can
+   actually type "cool_cat", drops only characters the server rejects, and
+   never falls back to raw invalid input (server allows [a-z0-9_]). */
+function sanitizeHandle(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+/, "")
+    .slice(0, 20);
+}
+
 /* Venue tour: the password meter. Same checks as the server minimum, the
    labels just make you want to reach the stadium. */
 function venue(password: string): { stage: number; label: string } {
@@ -163,7 +174,7 @@ export function JoinPlayground({
                 className={inputClass}
                 value={username}
                 onChange={(e) => {
-                  setUsername(slugify(e.target.value) || e.target.value.toLowerCase());
+                  setUsername(sanitizeHandle(e.target.value));
                   setHandleTouched(true);
                 }}
               />

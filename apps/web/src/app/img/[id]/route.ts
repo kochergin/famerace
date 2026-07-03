@@ -24,8 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  const bytes = await media.readAssetBytes(asset);
-  if (!bytes) return new Response("Gone", { status: 410 });
+  const total = asset.sizeBytes > 0 ? asset.sizeBytes : (asset.bytes?.length ?? 0);
+  if (total === 0) return new Response("Gone", { status: 410 });
 
   const baseHeaders: Record<string, string> = {
     "Content-Type": asset.mime,
@@ -33,30 +33,35 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     "Accept-Ranges": "bytes",
   };
 
-  // Range requests: video/audio seeking
+  // Range requests: video seeking reads ONLY the requested slice from disk —
+  // never the whole 64MB file per seek.
   const range = req.headers.get("range");
   if (range) {
     const match = range.match(/bytes=(\d*)-(\d*)/);
     if (match) {
       const start = match[1] ? parseInt(match[1], 10) : 0;
-      const end = match[2] ? Math.min(parseInt(match[2], 10), bytes.length - 1) : bytes.length - 1;
-      if (start <= end && start < bytes.length) {
-        return new Response(new Uint8Array(bytes.subarray(start, end + 1)), {
+      const end = match[2] ? Math.min(parseInt(match[2], 10), total - 1) : total - 1;
+      if (start <= end && start < total) {
+        const slice = await media.readAssetRange(asset, start, end);
+        if (!slice) return new Response("Gone", { status: 410 });
+        return new Response(new Uint8Array(slice), {
           status: 206,
           headers: {
             ...baseHeaders,
-            "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
-            "Content-Length": String(end - start + 1),
+            "Content-Range": `bytes ${start}-${end}/${total}`,
+            "Content-Length": String(slice.length),
           },
         });
       }
       return new Response("Range not satisfiable", {
         status: 416,
-        headers: { "Content-Range": `bytes */${bytes.length}` },
+        headers: { "Content-Range": `bytes */${total}` },
       });
     }
   }
 
+  const bytes = await media.readAssetBytes(asset);
+  if (!bytes) return new Response("Gone", { status: 410 });
   return new Response(new Uint8Array(bytes), {
     headers: { ...baseHeaders, "Content-Length": String(bytes.length) },
   });

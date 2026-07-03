@@ -14,10 +14,16 @@ export async function POST(request: NextRequest): Promise<Response> {
   const p256dh = body?.keys?.p256dh as string | undefined;
   const auth = body?.keys?.auth as string | undefined;
   if (!endpoint || !p256dh || !auth) return Response.json({ error: "bad subscription" }, { status: 400 });
+  // Don't reassign an endpoint already owned by someone else — a signed-in user
+  // who learns another's endpoint must not steal (or hijack) their subscription.
+  const existing = await prisma.pushSubscription.findUnique({ where: { endpoint }, select: { userId: true } });
+  if (existing && existing.userId !== user.id) {
+    return Response.json({ error: "endpoint in use" }, { status: 409 });
+  }
   await prisma.pushSubscription.upsert({
     where: { endpoint },
     create: { userId: user.id, endpoint, p256dh, auth },
-    update: { userId: user.id, p256dh, auth },
+    update: { p256dh, auth },
   });
   return Response.json({ ok: true });
 }

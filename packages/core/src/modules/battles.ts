@@ -1,6 +1,6 @@
 import { prisma } from "@famerace/db";
 import { emitEvent } from "../events";
-import { notFound } from "../errors";
+import { DomainError, notFound } from "../errors";
 import { notify } from "./notify";
 
 /**
@@ -74,15 +74,20 @@ export async function ensureBattle(now = new Date()): Promise<number> {
   if (live.length < 2) return 0;
   const [a, b] = [live[0]!, live[1]!];
   const [aBaseline, bBaseline] = await Promise.all([supporterCount(a.id), supporterCount(b.id)]);
-  await prisma.battle.create({
-    data: {
-      creatorAId: a.id,
-      creatorBId: b.id,
-      aBaseline,
-      bBaseline,
-      endsAt: new Date(now.getTime() + BATTLE_HOURS * 3600_000),
-    },
+  const raced = await prisma.$transaction(async (tx) => {
+    if ((await tx.battle.count({ where: { status: "OPEN" } })) > 0) return true;
+    await tx.battle.create({
+      data: {
+        creatorAId: a.id,
+        creatorBId: b.id,
+        aBaseline,
+        bBaseline,
+        endsAt: new Date(now.getTime() + BATTLE_HOURS * 3600_000),
+      },
+    });
+    return false;
   });
+  if (raced) return 0;
   await emitEvent(prisma, {
     type: "CREATOR_MILESTONE",
     message: `⚔ Battle on: ${a.displayName} vs ${b.displayName} — whose crowd grows faster in ${BATTLE_HOURS}h?`,
@@ -139,7 +144,11 @@ export async function setUnlock(userId: string, atSeats: number, title: string) 
   if (!creator) throw notFound("Creator profile");
   const clean = title.trim().slice(0, 120);
   if (!clean || !Number.isInteger(atSeats) || atSeats < 1 || atSeats > 100_000) {
-    throw notFound("A seat goal and a reward");
+    throw new DomainError("BAD_UNLOCK", "Give it a seat goal (1+) and a short reward");
+  }
+  const openCount = await prisma.arenaUnlock.count({ where: { creatorId: creator.id, unlocked: false } });
+  if (openCount >= 5) {
+    throw new DomainError("TOO_MANY_UNLOCKS", "Five open promises is plenty — deliver one first");
   }
   return prisma.arenaUnlock.create({ data: { creatorId: creator.id, atSeats, title: clean } });
 }

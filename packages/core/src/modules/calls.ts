@@ -220,6 +220,13 @@ export async function metricValue(call: Pick<Call, "metric" | "creatorId" | "mis
 
 /** Settle one resolved call: winners split the losing pool, largest remainder. */
 async function settle(tx: Prisma.TransactionClient, callId: string, outcome: "RESOLVED_YES" | "RESOLVED_NO", value: number) {
+  // Atomic claim first: a call resolves exactly once even if two sweeps race,
+  // so Taste Points are never paid out twice.
+  const claimed = await tx.call.updateMany({
+    where: { id: callId, status: "OPEN" },
+    data: { status: outcome, resolvedValue: value, resolvedAt: new Date() },
+  });
+  if (claimed.count === 0) return;
   const call = await tx.call.findUniqueOrThrow({
     where: { id: callId },
     include: { stakes: { orderBy: { createdAt: "asc" } }, creator: { select: { displayName: true } } },
@@ -263,10 +270,6 @@ async function settle(tx: Prisma.TransactionClient, callId: string, outcome: "RE
     }
   }
 
-  await tx.call.update({
-    where: { id: callId },
-    data: { status: outcome, resolvedValue: value, resolvedAt: new Date() },
-  });
   publish({
     id: `resolve-${callId}`,
     type: "CALL_RESOLVED",

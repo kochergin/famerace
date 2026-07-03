@@ -1,18 +1,26 @@
 // Server-rendered price sparkline (PRD §15A.3: charts should be simple,
 // story-first, never intimidating trading UI). Pure SVG, no client JS.
 
+let sparkSeq = 0;
+
 export function Sparkline({
   points,
   width = 220,
   height = 56,
   className = "",
+  gradientId,
 }: {
   points: number[];
   width?: number;
   height?: number;
   className?: string;
+  gradientId?: string;
 }) {
   if (points.length < 2) return null;
+  // Unique gradient id per instance — a shared "spark-fill" id makes every
+  // sparkline on a page paint with the FIRST one's color (url(#id) resolves to
+  // the first matching element).
+  const fillId = gradientId ?? `spark-fill-${(sparkSeq = (sparkSeq + 1) % 1_000_000)}`;
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = Math.max(1, max - min);
@@ -35,12 +43,12 @@ export function Sparkline({
       aria-label="Price history"
     >
       <defs>
-        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={stroke} stopOpacity="0.25" />
           <stop offset="100%" stopColor={stroke} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={`${path} L${last[0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`} fill="url(#spark-fill)" />
+      <path d={`${path} L${last[0].toFixed(1)},${height - pad} L${pad},${height - pad} Z`} fill={`url(#${fillId})`} />
       <path
         d={path}
         fill="none"

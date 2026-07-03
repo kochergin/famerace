@@ -36,9 +36,18 @@ export async function requestPayout(userId: string, amountCents: number) {
     pre.availableCents > 0
       ? await moneyTx((tx) => advanceMod.repayFromEarnings(tx, creatorRow.id, pre.availableCents))
       : 0;
-  return prisma.$transaction(async (tx) => {
+  // Re-read balances INSIDE the serializable tx: the pre-tx snapshot is stale
+  // under concurrent requests, and two of them must not both pass the check.
+  return moneyTx(async (tx) => {
     const creator = creatorRow;
-    const availableCents = pre.availableCents - repaid;
+    const [earned, pendingAgg] = await Promise.all([
+      balance({ account: "CREATOR_EARNED", creatorId: creator.id }, tx),
+      tx.payout.aggregate({
+        where: { creatorId: creator.id, status: { in: ["REQUESTED", "COMPLIANCE_REVIEW", "APPROVED"] } },
+        _sum: { amountCents: true },
+      }),
+    ]);
+    const availableCents = earned - (pendingAgg._sum.amountCents ?? 0);
     if (amountCents > availableCents) {
       throw new DomainError(
         "INSUFFICIENT_BALANCE",
@@ -71,7 +80,12 @@ export async function sendPayout(actorId: string, payoutId: string, actorType: "
   return prisma.$transaction(async (tx) => {
     const payout = await tx.payout.findUnique({ where: { id: payoutId } });
     if (!payout) throw notFound("Payout");
-    if (payout.status !== "APPROVED") {
+    // Atomic claim: two concurrent sendPayout calls can't both post the ledger.
+    const claimed = await tx.payout.updateMany({
+      where: { id: payoutId, status: "APPROVED" },
+      data: { status: "SENT" },
+    });
+    if (claimed.count === 0) {
       throw new DomainError("NOT_APPROVED", `Payout is ${payout.status}`);
     }
     const ledgerTxId = await postLedgerTx(
@@ -85,7 +99,7 @@ export async function sendPayout(actorId: string, payoutId: string, actorType: "
     );
     const updated = await tx.payout.update({
       where: { id: payoutId },
-      data: { status: "SENT", ledgerTxId },
+      data: { ledgerTxId },
     });
     await audit(tx, { actorId, actorType, action: "PAYOUT_SENT", objectType: "Payout", objectId: payoutId });
     return updated;

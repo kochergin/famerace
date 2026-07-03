@@ -46,13 +46,16 @@ export async function postLedgerTx(
 }
 
 /** Balance of an account dimension (e.g. a creator's earned balance). */
-export async function balance(where: {
-  account: LedgerAccount;
-  userId?: string;
-  creatorId?: string;
-  missionId?: string;
-}): Promise<number> {
-  const agg = await prisma.ledgerEntry.aggregate({
+export async function balance(
+  where: {
+    account: LedgerAccount;
+    userId?: string;
+    creatorId?: string;
+    missionId?: string;
+  },
+  client: { ledgerEntry: { aggregate: typeof prisma.ledgerEntry.aggregate } } = prisma,
+): Promise<number> {
+  const agg = await client.ledgerEntry.aggregate({
     where: {
       account: where.account,
       ...(where.userId ? { userId: where.userId } : {}),

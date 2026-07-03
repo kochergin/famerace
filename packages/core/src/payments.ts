@@ -69,3 +69,25 @@ export const paymentProvider: PaymentProvider = {
   release: (authRef) => active().release(authRef),
   payout: (input) => active().payout(input),
 };
+
+/**
+ * Charge a hold ONLY if the work commits. Authorize up front, run the domain
+ * transaction, capture on success, release on any failure — so a validation
+ * error (sold out, already a member, market closed) never leaves a user's
+ * money captured with nothing delivered. This is the buy() pattern, shared.
+ */
+export async function withHeldCharge<T>(
+  input: { userId: string; amountCents: number; purpose: string },
+  work: () => Promise<T>,
+): Promise<T> {
+  const auth = await paymentProvider.authorize(input);
+  try {
+    const result = await work();
+    await paymentProvider.capture(auth.authRef);
+    return result;
+  } catch (error) {
+    await paymentProvider.release(auth.authRef).catch(() => {});
+    throw error;
+  }
+}
+

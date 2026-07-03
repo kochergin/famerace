@@ -210,4 +210,57 @@ describe("backstage + drops + payouts", () => {
     expect(balances.availableCents - after.availableCents).toBe(5_000);
     await assertLedgerBalanced();
   });
+
+  it("concurrent sendPayout posts the payout ledger exactly once", async () => {
+    const { mira, creator } = await liveCreator();
+    const fan = await makeUser();
+    await dropsMod.tip(fan.id, creator.id, 10_000, "For the video!");
+    const payout = await payoutsMod.requestPayout(mira.id, 5_000);
+
+    const results = await Promise.allSettled([
+      payoutsMod.sendPayout(mira.id, payout.id, "SYSTEM"),
+      payoutsMod.sendPayout(mira.id, payout.id, "SYSTEM"),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    // Exactly one PAYOUT debit — no double-send draining CREATOR_EARNED twice.
+    const payoutTxns = await prisma.ledgerTx.count({ where: { type: "PAYOUT" } });
+    expect(payoutTxns).toBe(1);
+    await assertLedgerBalanced();
+  });
+
+  it("concurrent startWork releases mission escrow exactly once", async () => {
+    const { admin, fan1, mira, mission, creator } = await liveCreator();
+    await missionsMod.approveMission(admin.id, mission.id);
+    await missionsMod.contribute(fan1.id, mission.id, 42_000); // reaches the 50k goal
+
+    const before = await balance({ account: "CREATOR_EARNED", creatorId: creator.id });
+    const results = await Promise.allSettled([
+      missionsMod.startWork(mira.id, mission.id),
+      missionsMod.startWork(mira.id, mission.id),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const after = await balance({ account: "CREATOR_EARNED", creatorId: creator.id });
+    expect(after - before).toBe(50_000 - 2_500); // released once, not twice
+    expect(await balance({ account: "MISSION_ESCROW", missionId: mission.id })).toBe(0);
+    await assertLedgerBalanced();
+  });
+
+  it("a failed purchase (already owned) refunds the hold — no silent debit", async () => {
+    const { mira, creator } = await liveCreator();
+    const buyer = await makeUser({ usdcCents: 50_000 });
+    const drop = await dropsMod.createDrop(mira.id, {
+      title: "Demo",
+      description: "First listen.",
+      priceCents: 2_000,
+    });
+    await dropsMod.purchaseDrop(buyer.id, drop.id);
+    const afterFirst = (await prisma.user.findUniqueOrThrow({ where: { id: buyer.id } })).usdcCents;
+
+    // Second purchase throws ALREADY_OWNED after the hold — the hold must release.
+    await expect(dropsMod.purchaseDrop(buyer.id, drop.id)).rejects.toThrow(/already/i);
+    const afterSecond = (await prisma.user.findUniqueOrThrow({ where: { id: buyer.id } })).usdcCents;
+    expect(afterSecond).toBe(afterFirst); // not charged for the rejected buy
+    void creator;
+    await assertLedgerBalanced();
+  });
 });

@@ -199,17 +199,22 @@ export default async function DashboardPage({
       select: { id: true },
     });
     if (!seen) {
-      await prisma.notification.create({
-        data: {
-          userId: user.id,
-          type: "PAYOUT_UPDATE",
-          title: "First money on FameRace",
-          body: "Someone paid to believe in you. It compounds from here.",
-          link: "/dashboard/earnings",
-          readAt: new Date(),
-        },
-      });
-      firstDollar = true;
+      // Deterministic id: concurrent dashboard loads race the findFirst, but
+      // only one create wins the PK — the loser skips the ceremony.
+      firstDollar = await prisma.notification
+        .create({
+          data: {
+            id: `fd_${creator.id}`,
+            userId: user.id,
+            type: "PAYOUT_UPDATE",
+            title: "First money on FameRace",
+            body: "Someone paid to believe in you. It compounds from here.",
+            link: "/dashboard/earnings",
+            readAt: new Date(),
+          },
+        })
+        .then(() => true)
+        .catch(() => false);
     }
   }
 

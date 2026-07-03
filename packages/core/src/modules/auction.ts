@@ -62,6 +62,12 @@ export async function settleAuction(auctionId: string): Promise<void> {
       const clearing = clearBatchAuction(market, buyOrders.map((o) => ({ id: o.id, amountCents: o.amountCents })));
       const fillByOrder = new Map(clearing.fills.map((f) => [f.id, f]));
 
+      // Denominator is the pledged total of orders that ACTUALLY received units.
+      // Including zero-unit (released) orders would shrink every share so the
+      // sum of charges falls below the curve cost, under-funding the reserve.
+      const fundedPledgeCents = clearing.fills
+        .filter((f) => f.units > 0)
+        .reduce((s, f) => s + f.amountCents, 0);
       let reserveCents = 0;
       for (const order of buyOrders) {
         const fill = fillByOrder.get(order.id);
@@ -71,10 +77,10 @@ export async function settleAuction(auctionId: string): Promise<void> {
           continue;
         }
         await paymentProvider.capture(order.paymentAuthRef ?? "");
-        // Charge exactly the proportional cost share; remainder of the pledge releases.
+        // Charge the proportional cost share (ceil favors the reserve); remainder releases.
         const shareCents = Math.min(
           order.amountCents,
-          Math.ceil((clearing.totalSpentCents * order.amountCents) / Math.max(1, clearing.fills.reduce((s, f) => s + f.amountCents, 0))),
+          Math.ceil((clearing.totalSpentCents * order.amountCents) / Math.max(1, fundedPledgeCents)),
         );
         reserveCents += shareCents;
         await postLedgerTx(
