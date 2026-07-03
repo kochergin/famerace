@@ -7,7 +7,7 @@ import { ReportForm } from "@/components/report";
 import { withErrorRedirect } from "@/lib/action";
 import { Monogram } from "@/components/monogram";
 import { TiltCard } from "@/components/tilt-card";
-import { SectionTitle, Stat } from "@/components/ui";
+import { EmptyRow, SectionTitle, Stat } from "@/components/ui";
 import { num, timeAgo } from "@/lib/format";
 import { currentUser } from "@/lib/session";
 import { logoutAction } from "@/app/actions/auth";
@@ -160,7 +160,13 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
           Roster ({roster.entries.length})
         </SectionTitle>
         {roster.entries.length === 0 ? (
-          <p className="card p-5 text-sm text-muted">Nothing on the roster yet.</p>
+          <div className="card p-5">
+            <EmptyRow
+              glyph="⭐"
+              title="No one on the roster yet — the board is full of futures."
+              action={<Link href="/draft" className="text-lime hover:brightness-110">Open the board →</Link>}
+            />
+          </div>
         ) : (
           <div className="flex flex-wrap gap-2">
             {roster.entries.map(({ entry, creator, draft }) => {

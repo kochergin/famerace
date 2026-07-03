@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { claim, messages as messagesMod, requests as requestsMod } from "@famerace/core";
 import { FormError } from "@/components/form-error";
-import { SectionTitle } from "@/components/ui";
+import { EmptyRow, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
@@ -86,7 +86,9 @@ export default async function InboxPage({
 
       <SectionTitle>Paid messages</SectionTitle>
       {inbox.length === 0 ? (
-        <p className="card mb-6 p-5 text-sm text-muted">No paid messages yet.</p>
+        <div className="card mb-6 p-5">
+          <EmptyRow glyph="💌" title="No paid messages yet — fans pay to reach you here." />
+        </div>
       ) : (
         <div className="card mb-6 divide-y divide-edge">
           {inbox.map((message) => (
@@ -143,7 +145,9 @@ export default async function InboxPage({
       </form>
 
       {orders.length === 0 ? (
-        <p className="card p-5 text-sm text-muted">No requests yet.</p>
+        <div className="card p-5">
+          <EmptyRow glyph="🎟️" title="No requests yet — your menu is live on your page." />
+        </div>
       ) : (
         <div className="card divide-y divide-edge">
           {orders.map((order) => (

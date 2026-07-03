@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { claim, missions as missionsMod } from "@famerace/core";
 import { FormError } from "@/components/form-error";
-import { FuelBar, SectionTitle, StatusChip } from "@/components/ui";
+import { EmptyRow, FuelBar, SectionTitle, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
@@ -123,7 +123,7 @@ export default async function DashboardMissionsPage({
       <SectionTitle>Your missions</SectionTitle>
       <div className="space-y-4">
         {creator.missions.length === 0 ? (
-          <p className="text-sm text-muted">No missions yet — your launch gate needs one.</p>
+          <EmptyRow glyph="🎯" title="No missions yet — your launch gate needs one. Pitch it above." />
         ) : (
           creator.missions.map((mission) => (
             <div key={mission.id} className="card p-5">

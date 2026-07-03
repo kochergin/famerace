@@ -49,6 +49,7 @@ export function Stat({ label, value, accent }: { label: string; value: ReactNode
 /**
  * Mandatory risk disclosure (PRD §15.3). The confirm button is part of this
  * component so no purchase flow can render a confirm without the disclosure.
+ * Presented as four scannable beats, not a wall of gray text.
  */
 export function RiskDisclosure({
   confirmLabel,
@@ -61,11 +62,17 @@ export function RiskDisclosure({
 }) {
   return (
     <div className="space-y-3">
-      <div className="rounded border border-edge bg-ink/60 p-3 text-xs leading-relaxed text-muted">
-        {copy.riskDisclosure.map((line) => (
-          <p key={line}>{line}</p>
-        ))}
-        {feeLine ? <p className="mt-1 text-chrome">{feeLine}</p> : null}
+      <div className="rounded border border-edge bg-ink/60 px-3 py-2.5">
+        <p className="stat text-[10px] uppercase tracking-[0.3em] text-muted/80">Know the game</p>
+        <ul className="mt-1.5 space-y-1 text-[11px] leading-snug text-muted">
+          {copy.riskDisclosure.map((line) => (
+            <li key={line} className="flex gap-1.5">
+              <span aria-hidden className="text-edge">▸</span>
+              {line}
+            </li>
+          ))}
+        </ul>
+        {feeLine ? <p className="stat mt-2 border-t border-edge/60 pt-1.5 text-[11px] text-chrome">{feeLine}</p> : null}
       </div>
       {disabled ? (
         <button
@@ -93,6 +100,28 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
       <EmptyStage className="mb-3" />
       <p className="display text-xl text-muted">{title}</p>
       {hint ? <p className="text-sm text-muted">{hint}</p> : null}
+    </div>
+  );
+}
+
+/** Compact in-card empty: a beat of stage character instead of a gray "no
+ *  data" line. Keep the title short — the action does the inviting. */
+export function EmptyRow({
+  glyph = "✦",
+  title,
+  action,
+}: {
+  glyph?: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded border border-dashed border-edge px-4 py-6 text-center">
+      <span aria-hidden className="text-xl opacity-70">
+        {glyph}
+      </span>
+      <p className="text-sm text-muted">{title}</p>
+      {action ? <div className="mt-0.5 text-xs font-bold uppercase tracking-wide">{action}</div> : null}
     </div>
   );
 }

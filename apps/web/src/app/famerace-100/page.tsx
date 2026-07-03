@@ -204,10 +204,10 @@ export default async function FameRace100Page({
                   <a
                     href={`/card/battle/${scored[0]!.creator.handle}:${creator.handle}`}
                     target="_blank"
-                    className="text-pink"
+                    className="rounded border border-pink/40 px-1.5 py-0.5 text-[11px] text-pink transition hover:bg-pink/10"
                     title={`Battle card: ${scored[0]!.creator.displayName} vs ${creator.displayName}`}
                   >
-                    ⚔
+                    ⚔ vs #1
                   </a>
                 ) : null}
               </span>

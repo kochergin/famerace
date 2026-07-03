@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { wallet as walletMod } from "@famerace/core";
 import { CountUp } from "@/components/count-up";
 import { ShareRow } from "@/components/share";
-import { Banner, SectionTitle } from "@/components/ui";
+import { Banner, EmptyRow, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
@@ -126,7 +126,13 @@ export default async function WalletPage({
       <section className="mt-6">
         <SectionTitle>Activity</SectionTitle>
         {entries.length === 0 ? (
-          <p className="card p-5 text-sm text-muted">No movements yet.</p>
+          <div className="card p-5">
+            <EmptyRow
+              glyph="🧾"
+              title="No movements yet — your first back writes the first line."
+              action={<Link href="/live" className="text-lime hover:brightness-110">Back someone →</Link>}
+            />
+          </div>
         ) : (
           <ol className="card divide-y divide-edge">
             {entries.map((entry) => {

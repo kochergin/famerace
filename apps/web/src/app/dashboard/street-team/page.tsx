@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { claim, streetteam } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { FormError } from "@/components/form-error";
-import { SectionTitle } from "@/components/ui";
+import { EmptyRow, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
@@ -157,7 +157,9 @@ export default async function StreetTeamDashboard({
       <SectionTitle>Your quests</SectionTitle>
       <ul className="card divide-y divide-edge text-sm">
         {quests.length === 0 ? (
-          <li className="px-5 py-3 text-muted">No quests yet.</li>
+          <li className="p-4">
+            <EmptyRow glyph="🥷" title="No quests yet — give your street team its first job." />
+          </li>
         ) : (
           quests.map((quest) => (
             <li key={quest.id} className="flex justify-between px-5 py-3">

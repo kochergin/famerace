@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { missions as missionsMod, DomainError } from "@famerace/core";
-import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
+import { EmptyRow, FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { money, num, timeAgo } from "@/lib/format";
 import { ShareRow } from "@/components/share";
 
@@ -95,7 +95,7 @@ export default async function MissionPage({ params }: { params: Promise<{ id: st
       <section className="card mt-6 p-6">
         <SectionTitle>Updates &amp; proof</SectionTitle>
         {mission.updates.length === 0 ? (
-          <p className="text-sm text-muted">No updates yet.</p>
+          <EmptyRow glyph="🎬" title="No updates yet — proof lands here as the mission ships." />
         ) : (
           <div className="space-y-3">
             {mission.updates.map((update) => (

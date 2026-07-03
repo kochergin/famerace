@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { claim, payouts as payoutsMod } from "@famerace/core";
 import { FormError } from "@/components/form-error";
 import { Sparkline } from "@/components/sparkline";
 import { prisma } from "@famerace/db";
-import { SectionTitle, Stat, StatusChip } from "@/components/ui";
+import { EmptyRow, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num, timeAgo } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
@@ -90,7 +91,11 @@ export default async function EarningsPage({
       <SectionTitle>Earnings by stream</SectionTitle>
       <div className="card p-6">
         {streams.length === 0 ? (
-          <p className="text-sm text-muted">Nothing earned yet — launch, drop, post.</p>
+          <EmptyRow
+            glyph="💸"
+            title="Nothing earned yet — the first drop changes this page."
+            action={<Link href="/dashboard/backstage" className="text-lime hover:brightness-110">Post to Backstage →</Link>}
+          />
         ) : (
           <ul className="space-y-2 text-sm">
             {streams.map(([type, cents]) => (

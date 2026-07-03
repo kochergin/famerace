@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { roster as rosterMod, scores } from "@famerace/core";
 import { Monogram } from "@/components/monogram";
-import { Gauge, SectionTitle, Stat, StatusChip } from "@/components/ui";
+import { EmptyRow, Gauge, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { CATEGORY_LABELS, money, num } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
 
@@ -36,15 +36,18 @@ export default async function RosterPage() {
             </p>
           </div>
         </div>
-        <a
-          href={`/card/roster/${user.username}`}
-          target="_blank"
-          className="rounded bg-pink px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(255,61,141,0.35)] transition hover:brightness-110"
-        >
-          Generate Roster Card
-        </a>
+        {data.entries.length > 0 ? (
+          <a
+            href={`/card/roster/${user.username}`}
+            target="_blank"
+            className="rounded bg-pink px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-ink shadow-[0_0_20px_rgba(255,61,141,0.35)] transition hover:brightness-110"
+          >
+            Generate Roster Card
+          </a>
+        ) : null}
       </div>
 
+      {data.stats.backedCount > 0 ? (
       <Link
         href="/recap"
         className="card mt-4 flex items-center justify-between gap-3 border-pink/40 p-4 transition hover:border-pink"
@@ -59,6 +62,7 @@ export default async function RosterPage() {
         </span>
         <span className="stat text-xs uppercase tracking-widest text-muted">~30s</span>
       </Link>
+      ) : null}
 
       <div className="card mt-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <Stat label="Creators backed" value={num(data.stats.backedCount)} accent="text-lime" />
@@ -91,13 +95,13 @@ export default async function RosterPage() {
 
       <SectionTitle>The lineup</SectionTitle>
       {data.entries.length === 0 ? (
-        <p className="card p-6 text-sm text-muted">
-          Empty roster. Go find your first future star on the{" "}
-          <Link href="/draft" className="text-volt underline">
-            Draft Board
-          </Link>
-          .
-        </p>
+        <div className="card p-6">
+          <EmptyRow
+            glyph="⭐"
+            title="Nobody on the lineup yet — your first pick is waiting on the board."
+            action={<Link href="/draft" className="text-lime hover:brightness-110">Open the Draft Board →</Link>}
+          />
+        </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {data.entries.map(({ entry, creator, draft, backed }) => {
