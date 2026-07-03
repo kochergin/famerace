@@ -31,7 +31,7 @@ export function WeekOne({ steps }: { steps: WeekStep[] }) {
         <span aria-hidden className="absolute right-0 top-2.5 -translate-y-1/2">
           <LogoMark className="h-6 w-6" />
         </span>
-        <ol className="relative grid grid-cols-5 gap-2 pr-10">
+        <ol className="relative grid gap-2 pr-10" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
           {steps.map((step, index) => (
             <li key={step.label} className="min-w-0">
               <span

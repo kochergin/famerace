@@ -127,12 +127,58 @@ export default async function CreatorPage({
       include: {
         market: true,
         launchThreshold: true,
+        draftProfile: true,
         missions: { where: { status: { in: ["LIVE", "FUNDED", "IN_PROGRESS", "COMPLETED"] } } },
       },
     }),
     currentUser(),
   ]);
-  if (!creator || !["LAUNCHING_SOON", "LIVE", "PAUSED"].includes(creator.status)) notFound();
+  const PRE_LAUNCH = ["CLAIM_STARTED", "VERIFICATION_PENDING", "APPROVED"];
+  if (!creator || ![...PRE_LAUNCH, "LAUNCHING_SOON", "LIVE", "PAUSED"].includes(creator.status)) notFound();
+
+  /* Pre-launch: the link works from minute one. The star drops ONE address
+     in bio and it shows the right scene at every stage — right now, the
+     forming race: pledge, count, share. */
+  if (PRE_LAUNCH.includes(creator.status)) {
+    const draft = creator.draftProfile;
+    return (
+      <div className="relative mx-auto max-w-2xl overflow-x-clip py-10 text-center">
+        <span aria-hidden className="beam beam-a left-[6%]" />
+        <span aria-hidden className="beam beam-pink beam-b right-[6%]" />
+        <Monogram name={creator.displayName} src={creator.avatarUrl} size="xl" ring="draft" className="mx-auto" />
+        <p className="stat mt-5 text-[10px] uppercase tracking-[0.35em] text-volt">The race is forming</p>
+        <h1 className="display mt-2 text-5xl sm:text-6xl">{creator.displayName}</h1>
+        <p className="mt-1 text-sm text-muted">{CATEGORY_LABELS[creator.category]} · launching on FameRace</p>
+        {draft?.reasonNominated ? (
+          <p className="mx-auto mt-4 max-w-md text-sm text-chalk">“{draft.reasonNominated}”</p>
+        ) : null}
+        <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-4">
+          <Stat label="Fans staked" value={num(draft?.fanCount ?? 0)} accent="text-lime" />
+          <Stat label="Pledged so far" value={money(draft?.pledgedDemandTotal ?? 0, { compact: true })} accent="text-gold" />
+        </div>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          {creator.draftProfileId ? (
+            <Link
+              href={`/draft/${creator.draftProfileId}`}
+              className="rounded bg-lime px-6 py-3 font-bold uppercase tracking-wide text-ink shadow-[0_0_24px_rgba(201,247,58,0.3)] transition hover:brightness-110"
+            >
+              Stake your place early →
+            </Link>
+          ) : null}
+        </div>
+        <p className="mx-auto mt-3 max-w-sm text-xs text-muted">
+          Pledges are refundable holds — captured only if the launch clears its threshold. Early
+          backers keep their numbers forever.
+        </p>
+        <div className="mt-8 flex justify-center">
+          <ShareRow
+            text={`${creator.displayName} is launching on FameRace — stake your place before the world notices.`}
+            path={`/c/${handle}`}
+          />
+        </div>
+      </div>
+    );
+  }
   const m = creator.market;
   const overview = m ? await marketMod.marketOverview(m.id) : null;
   const priceHistory = m

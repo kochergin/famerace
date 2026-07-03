@@ -14,6 +14,7 @@ import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { money, num } from "@/lib/format";
 import { requireCurrentUser } from "@/lib/session";
+import { ShareRow } from "@/components/share";
 import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
@@ -230,7 +231,16 @@ export default async function DashboardPage({
 
   const week: WeekStep[] = [
     { label: "Show your face", done: Boolean(creator.avatarUrl), hint: "Upload below — faces convert." },
-    { label: "Pass verification", done: creator.status !== "CLAIM_STARTED", hint: "The form is right below." },
+    {
+      label: "Drop your link",
+      done: (creator.draftProfile?.fanCount ?? 0) > 0 || (creator.draftProfile?.pledgedDemandTotal ?? 0) > 0 || seatCount > 0,
+      hint: "Bio, pinned post, story — the card above has it.",
+    },
+    {
+      label: "Pass verification",
+      done: creator.status !== "CLAIM_STARTED" && creator.status !== "VERIFICATION_PENDING",
+      hint: creator.status === "VERIFICATION_PENDING" ? "Submitted — usually under 24h, we're on it." : "The form is right below.",
+    },
     { label: "Promise an unlock", done: unlocks.length > 0, hint: "Give the crowd a goal — arena card." },
     { label: "Post backstage", done: Boolean(lastPost), hint: "One demo from your drafts folder." },
     { label: "Turn money on", done: Boolean(advState.taken) || lifetimeEarnedCents > 0, hint: "Take the advance or land the first sale." },
@@ -371,6 +381,28 @@ export default async function DashboardPage({
               The promise shows on your public page — your crowd does the inviting to unlock it.
             </p>
           </div>
+        </section>
+      ) : null}
+
+      {/* The one address that works at every stage of the race */}
+      {!weekComplete(week) ? (
+        <section className="card spotlight mt-4 p-5" style={{ "--spot": "rgb(61 123 255 / 0.12)" } as React.CSSProperties}>
+          <p className="stat text-[10px] uppercase tracking-[0.3em] text-volt">Your link · works before, during and after launch</p>
+          <p className="stat mt-2 break-all text-2xl font-bold text-chalk">
+            famerace.fun<span className="text-lime">/c/{creator.handle}</span>
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <ShareRow
+              text={`I'm launching on FameRace — stake your place before the world notices.`}
+              path={`/c/${creator.handle}`}
+            />
+            <Link href="/dashboard/launch-kit" className="text-xs font-bold uppercase tracking-wide text-volt hover:brightness-110">
+              Announce pack →
+            </Link>
+          </div>
+          <p className="mt-2 text-[11px] text-muted">
+            Bio, pinned post, stories — one address, every stage. Your crowd takes it from there.
+          </p>
         </section>
       ) : null}
 
