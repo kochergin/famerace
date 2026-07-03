@@ -32,13 +32,19 @@ export async function emitEvent(
     },
   });
   if (event.visibility === "PUBLIC") {
-    publish({
+    const feedEvent = {
       id: event.id,
       type: event.type,
       message: event.message,
       createdAt: event.createdAt.toISOString(),
       creatorId: event.creatorId,
       draftProfileId: event.draftProfileId,
-    });
+    };
+    publish(feedEvent);
+    // Cross-instance fan-out: LISTEN famerace_events re-publishes on peers
+    // (instrumentation.ts). Best-effort — local delivery already happened.
+    void db
+      .$executeRaw`SELECT pg_notify('famerace_events', ${JSON.stringify(feedEvent)})`
+      .catch(() => undefined);
   }
 }

@@ -13,6 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const asset = await media.getAsset(id);
   if (!asset) return new Response("Not found", { status: 404 });
 
+  if (!asset.bytes || !asset.mime.startsWith("image/")) return new Response("No preview", { status: 404 });
   const base64 = Buffer.from(asset.bytes).toString("base64");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512">
   <filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="28"/></filter>

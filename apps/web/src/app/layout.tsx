@@ -5,6 +5,7 @@ import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { copy, draftday, notify } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { currentUser } from "@/lib/session";
+import { CommandPalette, SearchButton } from "@/components/command-palette";
 import { Countdown } from "@/components/countdown";
 import { Logo } from "@/components/logo";
 import { Monogram } from "@/components/monogram";
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               ) : null}
             </nav>
             <div className="ml-auto flex items-center gap-3 text-sm">
+              <SearchButton />
               {user ? (
                 <>
                   {user.roles.includes("CREATOR") ? (
@@ -158,6 +160,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </Link>
           </p>
         </footer>
+        <CommandPalette />
         <TabBar
           homeHref={user?.roles.includes("CREATOR") ? "/dashboard" : "/"}
           homeLabel={user?.roles.includes("CREATOR") ? "HQ" : "Home"}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { backstage, copy, drops as dropsMod, missions as missionsMod } from "@famerace/core";
+import { backstage, copy, drops as dropsMod, missions as missionsMod, media } from "@famerace/core";
 import { prisma, type BackstageTier, type Drop, type Mission } from "@famerace/db";
 import { LockedMedia } from "@/components/locked-media";
 import { FuelBar, RiskDisclosure, SectionCard, SectionTitle } from "@/components/ui";
@@ -169,6 +169,7 @@ export async function BackstageSection({
   ]);
   if (tiers.length === 0 && feed.length === 0) return null;
   const isMember = membership?.status === "ACTIVE";
+  const mimes = await media.mimesForUrls(feed.map(({ post }) => post.mediaUrl).filter(Boolean) as string[]);
 
   return (
     <SectionCard accent="velvet">
@@ -195,7 +196,7 @@ export async function BackstageSection({
               {unlocked ? (
                 <>
                   <p className="mt-2 whitespace-pre-line text-sm text-chrome">{post.body}</p>
-                  {post.mediaUrl ? <LockedMedia src={post.mediaUrl} unlocked label="" /> : null}
+                  {post.mediaUrl ? <LockedMedia src={post.mediaUrl} unlocked label="" mime={mimes.get(post.mediaUrl)} /> : null}
                 </>
               ) : (
                 <div className="mt-2">
@@ -205,6 +206,7 @@ export async function BackstageSection({
                       src={post.mediaUrl}
                       unlocked={false}
                       label={post.visibility === "HOLDERS" ? "Holders see this" : "Members see this"}
+                      mime={mimes.get(post.mediaUrl)}
                     />
                   ) : null}
                   <p className="mt-2 text-xs uppercase tracking-widest text-velvet">
@@ -266,6 +268,7 @@ export async function DropsSection({ creatorId, handle }: { creatorId: string; h
     take: 12,
   });
   if (drops.length === 0) return null;
+  const dropMimes = await media.mimesForUrls(drops.map((d) => d.mediaUrl).filter(Boolean) as string[]);
   const owned = user
     ? new Set(
         (
@@ -282,14 +285,14 @@ export async function DropsSection({ creatorId, handle }: { creatorId: string; h
       <SectionTitle>Paid drops</SectionTitle>
       <div className="grid gap-3 sm:grid-cols-2">
         {drops.map((drop) => (
-          <DropCard key={drop.id} drop={drop} handle={handle} owned={owned.has(drop.id)} signedIn={Boolean(user)} />
+          <DropCard key={drop.id} drop={drop} handle={handle} owned={owned.has(drop.id)} signedIn={Boolean(user)} mime={drop.mediaUrl ? dropMimes.get(drop.mediaUrl) : undefined} />
         ))}
       </div>
     </SectionCard>
   );
 }
 
-function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: string; owned: boolean; signedIn: boolean }) {
+function DropCard({ drop, handle, owned, signedIn, mime }: { drop: Drop; handle: string; owned: boolean; signedIn: boolean; mime?: string }) {
   return (
     <div className="rounded border border-edge p-4">
       <div className="flex items-baseline justify-between">
@@ -299,12 +302,12 @@ function DropCard({ drop, handle, owned, signedIn }: { drop: Drop; handle: strin
       {owned ? (
         <>
           <p className="mt-2 whitespace-pre-line text-sm text-chrome">{drop.description}</p>
-          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked label="" /> : null}
+          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked label="" mime={mime} /> : null}
         </>
       ) : (
         <>
           <p className="mt-2 text-sm text-muted">{drop.previewText ?? "Unlock to view."}</p>
-          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked={false} label="Unlock to see it sharp" /> : null}
+          {drop.mediaUrl ? <LockedMedia src={drop.mediaUrl} unlocked={false} label="Unlock to see it sharp" mime={mime} /> : null}
         </>
       )}
       {drop.quantityLimit ? (

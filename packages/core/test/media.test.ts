@@ -19,7 +19,7 @@ describe("media: avatar pipeline", () => {
 
     const asset = await mediaMod.getAsset(assetId);
     expect(asset?.mime).toBe("image/png");
-    expect(Buffer.from(asset!.bytes).equals(PNG_1PX)).toBe(true);
+    expect(Buffer.from(asset!.bytes!).equals(PNG_1PX)).toBe(true);
 
     const fresh = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(fresh.avatarUrl).toBe(url);
@@ -57,5 +57,25 @@ describe("media: avatar pipeline", () => {
     ]);
     expect(freshCreator.avatarUrl).toBe(url);
     expect(freshUser.avatarUrl).toBeNull();
+  });
+
+  it("stores video on disk (webm magic), streams it back, and caps oversized files", async () => {
+    const user = await makeUser();
+    const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(64, 7)]);
+    const { assetId, url, mime } = await mediaMod.storeMedia(user.id, { bytes: webm }, "POST");
+    expect(mime).toBe("video/webm");
+    expect(url).toBe(`/img/${assetId}`);
+
+    const asset = await mediaMod.getAsset(assetId);
+    expect(asset?.path).toBeTruthy();
+    expect(asset?.bytes ?? null).toBeNull();
+    const back = await mediaMod.readAssetBytes(asset!);
+    expect(back?.equals(webm)).toBe(true);
+
+    const tooBig = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(mediaMod.MAX_AV_BYTES, 1)]);
+    await expect(mediaMod.storeMedia(user.id, { bytes: tooBig }, "POST")).rejects.toMatchObject({ code: "FILE_TOO_LARGE" });
+
+    const garbage = Buffer.from("definitely not media at all");
+    await expect(mediaMod.storeMedia(user.id, { bytes: garbage }, "POST")).rejects.toMatchObject({ code: "BAD_MEDIA" });
   });
 });

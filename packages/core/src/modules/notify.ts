@@ -3,6 +3,22 @@ import { prisma, type Db, type NotificationType, type Prisma } from "@famerace/d
 // Notification helper (PRD §9.19) honoring the user's mute setting (§9.1).
 // All modules create notifications through this so preferences apply in one place.
 
+/* Outbound delivery seam: the web layer registers a sink at boot
+   (instrumentation) that fans notifications out to web push / email.
+   Fire-and-forget — a broken channel never breaks the transaction. */
+export type OutboundNotification = {
+  userId: string;
+  type: string;
+  title: string;
+  body?: string | null;
+  link?: string | null;
+};
+type NotificationSink = (n: OutboundNotification) => void;
+const globalForSink = globalThis as unknown as { fameraceNotifySink?: NotificationSink };
+export function setNotificationSink(sink: NotificationSink): void {
+  globalForSink.fameraceNotifySink = sink;
+}
+
 export async function notify(
   db: Db | Prisma.TransactionClient,
   input: {
@@ -26,6 +42,13 @@ export async function notify(
       body: input.body ?? null,
       link: input.link ?? null,
     },
+  });
+  globalForSink.fameraceNotifySink?.({
+    userId: input.userId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    link: input.link,
   });
 }
 

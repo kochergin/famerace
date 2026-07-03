@@ -151,7 +151,7 @@ export default async function DashboardBackstagePage({
         <input name="preview" placeholder="Public teaser (shown to non-members)" className={inputClass} />
         <label className="block text-xs uppercase tracking-wide text-muted">
           Photo (members see it sharp — everyone else sees the locked blur)
-          <input name="media" type="file" accept="image/png,image/jpeg,image/webp" className={`mt-1 ${inputClass}`} />
+          <input name="media" type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg" className={`mt-1 ${inputClass}`} />
         </label>
         <select name="visibility" className={inputClass} defaultValue="MEMBERS">
           <option value="MEMBERS">Members</option>
@@ -180,7 +180,7 @@ export default async function DashboardBackstagePage({
         <input name="mediaUrl" type="url" placeholder="Media link (optional)" className={inputClass} />
         <label className="block text-xs uppercase tracking-wide text-muted">
           Cover image (buyers see it sharp — everyone else sees the locked blur)
-          <input name="media" type="file" accept="image/png,image/jpeg,image/webp" className={`mt-1 ${inputClass}`} />
+          <input name="media" type="file" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,audio/mpeg,audio/ogg" className={`mt-1 ${inputClass}`} />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <input name="price" type="number" min={1} step="0.01" placeholder="Price $" required className={inputClass} />

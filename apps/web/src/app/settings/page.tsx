@@ -7,6 +7,7 @@ import { FormError } from "@/components/form-error";
 import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { requireCurrentUser } from "@/lib/session";
+import { PushToggle } from "@/components/push-toggle";
 import { SoundToggle } from "@/components/sound-toggle";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -88,6 +89,7 @@ export default async function SettingsPage({
           Mute all notifications
         </label>
         <SoundToggle />
+        <PushToggle />
         <SubmitButton pendingLabel="Saving…" className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Save
         </SubmitButton>
