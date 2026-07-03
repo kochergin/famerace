@@ -12,6 +12,7 @@ import { Crowd, StageLights } from "@/components/stage";
 import { TiltCard } from "@/components/tilt-card";
 import { FuelBar, SectionTitle } from "@/components/ui";
 import { money, num } from "@/lib/format";
+import { LogoMark } from "@/components/logo";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -117,22 +118,34 @@ export default async function HomePage() {
         </div>
       ) : null}
 
-      {/* How it works — three beats, three glyphs */}
-      <div className="fade-up mb-10 grid gap-3 sm:grid-cols-3">
-        {HOW.map((step, index) => (
-          <div key={step.title} className="card spotlight p-5" style={{ "--spot": step.spot } as React.CSSProperties}>
-            <div className="flex items-center gap-3">
-              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${step.frame}`}>
+      {/* How it works — not three cards: one track. The line runs scout →
+          back → rise and ends at the flag, because that's where every story
+          on this site is headed. */}
+      <div className="fade-up relative mb-12">
+        <div
+          aria-hidden
+          className="absolute left-[10%] right-[7%] top-5 hidden h-px sm:block"
+          style={{ background: "linear-gradient(90deg, rgb(61 123 255 / 0.5), rgb(201 247 58 / 0.5), rgb(240 195 60 / 0.6))" }}
+        />
+        <span aria-hidden className="absolute right-[3.5%] top-5 hidden -translate-y-1/2 sm:block">
+          <LogoMark className="h-7 w-7" />
+        </span>
+        <div className="grid gap-6 sm:grid-cols-3 sm:gap-3">
+          {HOW.map((step, index) => (
+            <div key={step.title} className="flex items-start gap-3 sm:block sm:pr-6">
+              <span
+                className={`relative z-10 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-ink ${step.frame}`}
+              >
                 {step.glyph}
               </span>
-              <div>
+              <div className="sm:mt-3">
                 <p className="stat text-[10px] uppercase tracking-widest text-muted">Step {index + 1}</p>
                 <h3 className={`display text-2xl ${step.tint}`}>{step.title}</h3>
+                <p className="mt-1.5 text-sm text-muted">{step.text}</p>
               </div>
             </div>
-            <p className="mt-2 text-sm text-muted">{step.text}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
