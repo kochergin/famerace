@@ -15,6 +15,7 @@ import { PaidMessageBox, RequestMenuSection } from "./engage";
 import { ReportForm } from "@/components/report";
 import { ShareRow } from "@/components/share";
 import { Backdrop } from "@/components/backdrop";
+import { BackBox } from "@/components/back-box";
 import { CallCard } from "@/components/call-card";
 import { CategoryGlyph } from "@/components/category-art";
 import { Confetti } from "@/components/confetti";
@@ -151,6 +152,10 @@ export default async function CreatorPage({
         where: { userId_creatorId: { userId: user.id, creatorId: creator.id } },
       })
     : null;
+  const nextBackerRank =
+    m && !holding?.backerRank
+      ? (await prisma.holding.count({ where: { creatorMarketId: m.id, backerRank: { not: null } } })) + 1
+      : null;
   const perks = Array.isArray(creator.perks) ? (creator.perks as string[]) : [];
   const socials = Array.isArray(creator.socialLinks) ? (creator.socialLinks as string[]) : [];
   const tradeable = m && ["GENESIS_CURVE", "GRADUATION", "MATURE"].includes(m.status);
@@ -327,39 +332,21 @@ export default async function CreatorPage({
           <section className="card flex flex-col p-6">
             <SectionTitle>{copy.cta.back(creator.displayName)}</SectionTitle>
             {user ? (
-              <form action={backAction} className="flex flex-1 flex-col gap-3">
-                <input type="hidden" name="handle" value={handle} />
-                <input type="hidden" name="marketId" value={m.id} />
-                <div className="flex flex-wrap gap-2">
-                  {[2500, 10000, 50000].map((cents, i) => (
-                    <label key={cents} className="cursor-pointer">
-                      <input type="radio" name="tier" value={cents} defaultChecked={i === 0} className="peer sr-only" />
-                      <span className="stat inline-block rounded border border-edge px-4 py-2 text-sm font-bold peer-checked:border-lime peer-checked:text-lime">
-                        {money(cents)}
-                      </span>
-                    </label>
-                  ))}
-                  <input
-                    name="customAmount"
-                    type="number"
-                    min={1}
-                    step={1}
-                    placeholder="Custom $"
-                    className="w-24 rounded border border-edge bg-ink px-3 py-2 text-sm text-chalk placeholder:text-muted focus:border-lime focus:outline-none"
-                  />
-                </div>
-                <ul className="list-inside list-disc text-xs text-muted">
-                  <li>${m.ticker} access/status units on the live curve</li>
-                  <li>Permanent backer rank on first back</li>
-                  <li>Holder-gated Backstage eligibility</li>
-                </ul>
-                <div className="mt-auto">
-                  <RiskDisclosure
-                    confirmLabel={copy.cta.back(creator.displayName)}
-                    feeLine={copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}
-                  />
-                </div>
-              </form>
+              <BackBox
+                action={backAction}
+                handle={handle}
+                marketId={m.id}
+                ticker={m.ticker}
+                curve={{ basePriceCents: m.basePriceCents, slopeMilliCents: m.slopeMilliCents }}
+                supply={m.supplyUnits}
+                feeBps={{ creator: m.creatorFeeBps, protocol: m.protocolFeeBps, scout: m.scoutFeeBps }}
+                nextBackerRank={nextBackerRank}
+              >
+                <RiskDisclosure
+                  confirmLabel={copy.cta.back(creator.displayName)}
+                  feeLine={copy.feeDisclosure(m.creatorFeeBps, m.protocolFeeBps, m.scoutFeeBps)}
+                />
+              </BackBox>
             ) : (
               <div className="flex flex-1 flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
