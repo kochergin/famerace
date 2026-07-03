@@ -1,4 +1,5 @@
 import { prisma, type Creator, type Prisma, type ThresholdStatus } from "@famerace/db";
+import * as draftMod from "./draft";
 import { z } from "zod";
 import { config } from "../config";
 import { DomainError, notFound } from "../errors";
@@ -26,6 +27,32 @@ async function generateTicker(tx: Prisma.TransactionClient, handle: string): Pro
  * Step 1 — the person behind a draft profile starts the claim.
  * Creates the Creator record (status CLAIM_STARTED) linked to the draft.
  */
+/**
+ * Self-serve entry for creators who bring their own audience: list yourself
+ * and claim in one move. Self-listing IS consent, so clean nominations skip
+ * the moderation queue (prohibited-content flags still hold the gate); the
+ * result lands in the exact same claim pipeline as a fan-drafted creator.
+ * If fans already drafted this handle, the creator claims the existing
+ * profile — and inherits every pledge waiting on it.
+ */
+export async function selfLaunch(
+  userId: string,
+  input: { nameOrHandle: string; category: string; thesis: string; externalLink?: string },
+): Promise<Creator> {
+  const { profile } = await draftMod.nominate(userId, {
+    nameOrHandle: input.nameOrHandle,
+    category: input.category as never,
+    thesis: input.thesis,
+    externalLink: input.externalLink ?? "",
+    requestedMission: "",
+  });
+  const fresh = await prisma.draftProfile.findUniqueOrThrow({ where: { id: profile.id } });
+  if (fresh.moderationStatus === "PENDING") {
+    await prisma.draftProfile.update({ where: { id: profile.id }, data: { moderationStatus: "APPROVED" } });
+  }
+  return startClaim(userId, profile.id);
+}
+
 export async function startClaim(userId: string, draftProfileId: string): Promise<Creator> {
   return prisma.$transaction(async (tx) => {
     const profile = await tx.draftProfile.findUnique({

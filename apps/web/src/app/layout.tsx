@@ -154,7 +154,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </p>
           <p className="display text-lg text-chrome">{copy.tagline}</p>
           <p className="mt-2 mx-auto max-w-lg">{copy.footerLegal}</p>
-          <p className="mt-2">
+          <p className="mt-2 flex justify-center gap-4">
+            <Link href="/creators" className="font-bold text-lime hover:brightness-110">
+              For creators →
+            </Link>
             <Link href="/terms" className="underline hover:text-chalk">
               Terms, disclosures &amp; fees
             </Link>

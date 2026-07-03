@@ -103,6 +103,12 @@ export default async function HomePage() {
             </Link>
           ) : null}
         </div>
+        <p className="mt-5 text-sm text-muted">
+          Are you a creator?{" "}
+          <Link href="/creators" className="font-bold text-lime hover:brightness-110">
+            Launch your race →
+          </Link>
+        </p>
         <Crowd />
       </section>
 

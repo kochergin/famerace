@@ -7,6 +7,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { Arena, nextRoom } from "@/components/arena";
 import { ClaimCeremony } from "@/components/claim-ceremony";
 import { FirstDollar } from "@/components/first-dollar";
+import { WeekOne, weekComplete, type WeekStep } from "@/components/week-one";
 import { FormError } from "@/components/form-error";
 import { Monogram } from "@/components/monogram";
 import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
@@ -182,7 +183,11 @@ export default async function DashboardPage({
     }),
   ]);
   const seatCount = new Set([...holderIds, ...passIds].map((r) => r.userId)).size;
-  const unlocks = await battlesMod.unlocksFor(creator.id);
+  const [unlocks, dropsCount, tiersCount] = await Promise.all([
+    battlesMod.unlocksFor(creator.id),
+    prisma.drop.count({ where: { creatorId: creator.id, status: { in: ["LIVE", "SOLD_OUT"] } } }),
+    prisma.backstageTier.count({ where: { creatorId: creator.id } }),
+  ]);
   const lifetimeEarnedCents = earnedAgg._sum.deltaCents ?? 0;
 
   // First-dollar ceremony: fires exactly once — the notification row is the flag.
@@ -222,6 +227,14 @@ export default async function DashboardPage({
     : staleDays >= 3 && memberCount > 0
       ? { text: `${num(memberCount)} Backstage members have not heard from you in ${staleDays === 99 ? "a while" : `${staleDays} days`}.`, href: "/dashboard/backstage", cta: "Post now →" }
       : { text: "Your numbers are proof. Post the income card where your people are.", href: `/card/creator_revenue/${creator.handle}`, cta: "Get the card ↓" };
+
+  const week: WeekStep[] = [
+    { label: "Show your face", done: Boolean(creator.avatarUrl), hint: "Upload below — faces convert." },
+    { label: "Pass verification", done: creator.status !== "CLAIM_STARTED", hint: "The form is right below." },
+    { label: "Promise an unlock", done: unlocks.length > 0, hint: "Give the crowd a goal — arena card." },
+    { label: "Post backstage", done: Boolean(lastPost), hint: "One demo from your drafts folder." },
+    { label: "Turn money on", done: Boolean(advState.taken) || lifetimeEarnedCents > 0, hint: "Take the advance or land the first sale." },
+  ];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -316,6 +329,10 @@ export default async function DashboardPage({
           {nextRoom(seatCount) ? (
             <FuelBar value={seatCount} max={nextRoom(seatCount)!.at} />
           ) : null}
+          <p className="mt-2 text-[11px] text-muted">
+            Every new backer moves four numbers at once: your advance ceiling, this room, the battle
+            bar and your momentum report.
+          </p>
           {/* Collective unlocks: give the crowd a named goal — they'll do the inviting */}
           <div className="mt-4 border-t border-edge pt-3">
             {unlocks.length > 0 ? (
@@ -357,7 +374,63 @@ export default async function DashboardPage({
         </section>
       ) : null}
 
-      {/* Next best move — one thing, not a dashboard of guilt */}
+      {/* The money map: every stream, on or off, and the switch for each */}
+      {lifetimeEarnedCents < 5_000 ? (
+        <section className="card mt-4 p-5">
+          <SectionTitle>Your money map</SectionTitle>
+          <ul className="space-y-2 text-sm">
+            {[
+              {
+                on: Boolean(advState.taken),
+                name: "Season advance",
+                state: advState.taken
+                  ? `${money(advState.taken.amountCents)} taken`
+                  : advState.eligibleCents > 0
+                    ? `${money(advState.eligibleCents)} ready — take it above`
+                    : `unlocks at $250 of pledged demand (${money(advState.demandCents, { compact: true })} now)`,
+              },
+              {
+                on: Boolean(creator.market),
+                name: "Trading fees",
+                state: creator.market ? "on — you earn a cut of every trade on your name" : "turns on at launch, automatically",
+              },
+              {
+                on: passes.length > 0,
+                name: "Genesis passes",
+                state: passes.length > 0 ? "selling — day-one status, capped forever" : "live on your page — share it",
+              },
+              {
+                on: tiersCount > 0,
+                name: "Backstage",
+                state: tiersCount > 0 ? `${num(memberCount)} member${memberCount === 1 ? "" : "s"}` : "set one tier in the Backstage tab",
+              },
+              {
+                on: dropsCount > 0,
+                name: "Drops",
+                state: dropsCount > 0 ? `${num(dropsCount)} live` : "one demo, one price — Backstage tab",
+              },
+              {
+                on: creator.missions.length > 0,
+                name: "Missions",
+                state: creator.missions.length > 0 ? `${num(creator.missions.length)} running` : "pitch one in the Missions tab",
+              },
+            ].map((stream) => (
+              <li key={stream.name} className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className={`h-2 w-2 shrink-0 rounded-full ${stream.on ? "bg-lime shadow-[0_0_6px_rgba(201,247,58,0.8)]" : "bg-edge"}`}
+                />
+                <span className="w-32 shrink-0 font-bold text-chalk">{stream.name}</span>
+                <span className={`min-w-0 truncate ${stream.on ? "text-lime" : "text-muted"}`}>{stream.state}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* First week = a track to cross; after that, one next move at a time */}
+      {!weekComplete(week) ? <WeekOne steps={week} /> : null}
+      {weekComplete(week) ? (
       <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 border-volt/40 p-4">
         <p className="text-sm text-chalk">
           <span className="stat mr-2 text-[10px] uppercase tracking-[0.25em] text-volt">Next move</span>
@@ -367,6 +440,7 @@ export default async function DashboardPage({
           {nextMove.cta}
         </a>
       </div>
+      ) : null}
 
       {/* The race: your people, with faces */}
       {race.length > 0 ? (
