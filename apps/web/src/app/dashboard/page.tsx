@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { advance as advanceMod, claim, copy } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { Arena, nextRoom } from "@/components/arena";
 import { ClaimCeremony } from "@/components/claim-ceremony";
+import { FirstDollar } from "@/components/first-dollar";
 import { FormError } from "@/components/form-error";
 import { Monogram } from "@/components/monogram";
 import { FuelBar, SectionTitle, Stat, StatusChip } from "@/components/ui";
@@ -151,6 +153,45 @@ export default async function DashboardPage({
     prisma.backstageMembership.count({ where: { creatorId: creator.id, status: "ACTIVE" } }),
   ]);
 
+  // Arena: every distinct supporter lights one seat (holders + pass holders).
+  const [holderIds, passIds, earnedAgg] = await Promise.all([
+    creator.market
+      ? prisma.holding.findMany({
+          where: { creatorMarketId: creator.market.id, amountUnits: { gt: 0 } },
+          select: { userId: true },
+        })
+      : Promise.resolve([] as { userId: string }[]),
+    prisma.genesisPass.findMany({ where: { creatorId: creator.id }, select: { userId: true } }),
+    prisma.ledgerEntry.aggregate({
+      where: { account: "CREATOR_EARNED", creatorId: creator.id, deltaCents: { gt: 0 } },
+      _sum: { deltaCents: true },
+    }),
+  ]);
+  const seatCount = new Set([...holderIds, ...passIds].map((r) => r.userId)).size;
+  const lifetimeEarnedCents = earnedAgg._sum.deltaCents ?? 0;
+
+  // First-dollar ceremony: fires exactly once — the notification row is the flag.
+  let firstDollar = false;
+  if (lifetimeEarnedCents > 0) {
+    const seen = await prisma.notification.findFirst({
+      where: { userId: user.id, type: "PAYOUT_UPDATE", title: "First money on FameRace" },
+      select: { id: true },
+    });
+    if (!seen) {
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: "PAYOUT_UPDATE",
+          title: "First money on FameRace",
+          body: "Someone paid to believe in you. It compounds from here.",
+          link: "/dashboard/earnings",
+          readAt: new Date(),
+        },
+      });
+      firstDollar = true;
+    }
+  }
+
   const race = [
     ...passes.map((x) => ({ at: x.createdAt, user: x.user, label: `Genesis Pass · #${x.backerNumber}`, cents: x.tierCents })),
     ...tips.map((x) => ({ at: x.createdAt, user: x.fromUser, label: "Tip", cents: x.amountCents })),
@@ -186,6 +227,9 @@ export default async function DashboardPage({
           draftId={creator.draftProfileId}
           handle={creator.handle}
         />
+      ) : null}
+      {firstDollar && !claimed ? (
+        <FirstDollar amountLabel={money(lifetimeEarnedCents, { compact: true })} backers={seatCount} />
       ) : null}
       <FormError error={error} />
 
@@ -227,6 +271,29 @@ export default async function DashboardPage({
         <p className="chip mt-4 border border-edge text-muted">
           Season advance {money(advState.taken.amountCents)} · repaid {money(advState.taken.repaidCents)}
         </p>
+      ) : null}
+
+      {/* The arena: your people as lit seats — sell out the next room */}
+      {creator.status === "LIVE" || seatCount > 0 ? (
+        <section className="card spotlight mt-4 p-5" style={{ "--spot": "rgb(201 247 58 / 0.1)" } as React.CSSProperties}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle>Your arena</SectionTitle>
+            <p className="stat text-xs text-muted">
+              <span className="font-bold text-lime">{num(seatCount)}</span> {seatCount === 1 ? "seat" : "seats"} lit
+              {nextRoom(seatCount) ? (
+                <>
+                  {" "}· next room: <span className="font-bold text-gold">{nextRoom(seatCount)!.label}</span> at {nextRoom(seatCount)!.at}
+                </>
+              ) : (
+                <> · sold out — you filled the arena</>
+              )}
+            </p>
+          </div>
+          <Arena lit={seatCount} className="mx-auto mt-1 w-full max-w-md" />
+          {nextRoom(seatCount) ? (
+            <FuelBar value={seatCount} max={nextRoom(seatCount)!.at} />
+          ) : null}
+        </section>
       ) : null}
 
       {/* Next best move — one thing, not a dashboard of guilt */}

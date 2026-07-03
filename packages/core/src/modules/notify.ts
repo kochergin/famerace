@@ -41,6 +41,14 @@ export async function unreadCount(userId: string): Promise<number> {
   return prisma.notification.count({ where: { userId, readAt: null } });
 }
 
+export async function markRead(userId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await prisma.notification.updateMany({
+    where: { userId, id: { in: ids }, readAt: null },
+    data: { readAt: new Date() },
+  });
+}
+
 export async function markAllRead(userId: string): Promise<void> {
   await prisma.notification.updateMany({
     where: { userId, readAt: null },

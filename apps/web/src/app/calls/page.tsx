@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { calls as callsMod } from "@famerace/core";
+import { calls as callsMod, notify } from "@famerace/core";
 import type { CallSide } from "@famerace/db";
 import { CallCard, OddsBar } from "@/components/call-card";
+import { CalledIt, type CallWin } from "@/components/called-it";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
 import { EmptyState, SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { num } from "@/lib/format";
 import { currentUser } from "@/lib/session";
+import { prisma } from "@famerace/db";
+import { requireCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +34,13 @@ async function stakeAction(formData: FormData) {
   redirect("/calls?called=1");
 }
 
+async function ackWinsAction(formData: FormData) {
+  "use server";
+  const user = await requireCurrentUser();
+  await notify.markRead(user.id, formData.getAll("ids").map(String));
+  revalidatePath("/calls");
+}
+
 /** Calls board: time-boxed predictions on creators, staked with Taste Points.
  *  Skill, not money — the leaderboard currency is being right early. */
 export default async function CallsPage({
@@ -46,6 +56,28 @@ export default async function CallsPage({
   ]);
   const myStakes = user ? await callsMod.stakesFor(user.id, [...open, ...resolved].map((c) => c.id)) : new Map();
   const record = user ? await callsMod.callRecord(user.id) : null;
+  // Unread "Called it" notifications become the celebration banner.
+  const wins: CallWin[] = user
+    ? (
+        await prisma.notification.findMany({
+          where: { userId: user.id, readAt: null, title: { startsWith: "Called it" } },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        })
+      ).map((n) => ({
+        id: n.id,
+        title: n.title,
+        body: n.body,
+        callId: n.link?.match(/win=([a-z0-9]+)/)?.[1] ?? null,
+      }))
+    : [];
+  const streak = user
+    ? (await prisma.user.findUnique({ where: { id: user.id }, select: { callStreak: true, lastStakeDay: true } }))
+    : null;
+  // A streak is alive if the last stake was today or yesterday (UTC).
+  const streakAlive =
+    streak?.lastStakeDay != null &&
+    Date.now() - new Date(streak.lastStakeDay).getTime() < 2 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -57,6 +89,7 @@ export default async function CallsPage({
         </p>
       ) : null}
       {error ? <p className="mb-4 rounded border border-pink/40 bg-pink/10 px-3 py-2 text-sm text-pink">{error}</p> : null}
+      {wins.length > 0 ? <CalledIt wins={wins} ackAction={ackWinsAction} /> : null}
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -71,6 +104,9 @@ export default async function CallsPage({
           <div className="card px-4 py-3 text-right">
             <p className="stat text-2xl font-bold text-lime">{num(user.points)}</p>
             <p className="text-[10px] uppercase tracking-widest text-muted">Taste Points</p>
+            {streakAlive && (streak?.callStreak ?? 0) > 0 ? (
+              <p className="stat mt-1 text-xs font-bold text-gold">🔥 {streak!.callStreak}-day taste streak</p>
+            ) : null}
             {record && record.wins + record.losses > 0 ? (
               <p className="stat mt-1 text-xs text-muted">
                 {record.wins}W–{record.losses}L · {record.netPoints >= 0 ? "+" : ""}

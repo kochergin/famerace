@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { playSound } from "@/lib/sound";
 
 const COLORS = ["#c9f73a", "#ff3d8d", "#f0c33c", "#3d7bff", "#f4f4f0"];
 
@@ -10,6 +11,7 @@ const COLORS = ["#c9f73a", "#ff3d8d", "#f0c33c", "#3d7bff", "#f4f4f0"];
 export function Confetti({ fireKey }: { fireKey: string }) {
   useEffect(() => {
     if (!fireKey) return;
+    playSound("pop");
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const canvas = document.createElement("canvas");

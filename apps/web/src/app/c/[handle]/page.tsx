@@ -17,6 +17,7 @@ import { ShareRow } from "@/components/share";
 import { Backdrop } from "@/components/backdrop";
 import { BackBox } from "@/components/back-box";
 import { CallCard } from "@/components/call-card";
+import { LivePulse } from "@/components/live-pulse";
 import { CategoryGlyph } from "@/components/category-art";
 import { Confetti } from "@/components/confetti";
 import { Monogram } from "@/components/monogram";
@@ -182,6 +183,7 @@ export default async function CreatorPage({
     <div className="mx-auto max-w-4xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       {flags.backed || flags.pass ? <Confetti fireKey={flags.backed ? "backed" : "pass"} /> : null}
+      <LivePulse creatorId={creator.id} />
       {/* Receipt interstitial: the proof-of-early moment IS the share moment */}
       {flags.backed ? (
         <div className="card spotlight story-in mb-4 border-lime/40 p-5" style={{ "--spot": "rgb(201 247 58 / 0.16)" } as React.CSSProperties}>

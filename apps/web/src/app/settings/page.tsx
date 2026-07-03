@@ -7,6 +7,7 @@ import { FormError } from "@/components/form-error";
 import { SectionTitle } from "@/components/ui";
 import { withErrorRedirect } from "@/lib/action";
 import { requireCurrentUser } from "@/lib/session";
+import { SoundToggle } from "@/components/sound-toggle";
 import { SubmitButton } from "@/components/submit-button";
 
 export const dynamic = "force-dynamic";
@@ -86,6 +87,7 @@ export default async function SettingsPage({
           <input type="checkbox" name="notificationsMuted" defaultChecked={fresh.notificationsMuted} className="accent-lime" />
           Mute all notifications
         </label>
+        <SoundToggle />
         <SubmitButton pendingLabel="Saving…" className="w-full rounded bg-lime px-4 py-3 font-bold uppercase tracking-wide text-ink hover:brightness-110">
           Save
         </SubmitButton>

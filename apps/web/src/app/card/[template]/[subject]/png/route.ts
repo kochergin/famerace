@@ -18,6 +18,7 @@ const TEMPLATES = new Set([
   "CREATOR_REVENUE",
   "TASTE_SCORE",
   "CREW",
+  "CALLED_IT",
 ]);
 
 /**

@@ -463,6 +463,8 @@ model User {
   status           UserStatus @default(ACTIVE)
   xp               Int        @default(0)
   points           Int        @default(0)
+  callStreak       Int        @default(0)
+  lastStakeDay     DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 

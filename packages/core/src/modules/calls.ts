@@ -73,7 +73,10 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
     if (call.deadline.getTime() <= Date.now()) throw new DomainError("CALL_LOCKED", "This call is past its deadline");
     const existing = await tx.callStake.findUnique({ where: { callId_userId: { callId, userId } } });
     if (existing) throw new DomainError("ALREADY_STAKED", "One position per call — you are already in");
-    const user = await tx.user.findUniqueOrThrow({ where: { id: userId }, select: { points: true, username: true } });
+    const user = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { points: true, username: true, callStreak: true, lastStakeDay: true },
+    });
     // Conditional debit: the WHERE clause makes overdraw impossible even if
     // two stakes race past the read above (defense in depth on top of the
     // serializable transaction).
@@ -85,6 +88,17 @@ export async function stake(userId: string, callId: string, side: CallSide, poin
       throw new DomainError("NOT_ENOUGH_POINTS", `You have ${user.points} Taste Points — earn more by backing, funding and quests`);
     }
     const stakeRow = await tx.callStake.create({ data: { callId, userId, side, points } });
+
+    // Taste streak: consecutive UTC days with at least one call made.
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const last = user.lastStakeDay ? new Date(user.lastStakeDay) : null;
+    if (!last || last.getTime() !== today.getTime()) {
+      const yesterday = today.getTime() - 24 * 60 * 60 * 1000;
+      const streak = last && last.getTime() === yesterday ? user.callStreak + 1 : 1;
+      await tx.user.update({ where: { id: userId }, data: { callStreak: streak, lastStakeDay: today } });
+    }
+
     const shareBefore = yesShare(call);
     const updated = await tx.call.update({
       where: { id: callId },
@@ -241,7 +255,7 @@ async function settle(tx: Prisma.TransactionClient, callId: string, outcome: "RE
         type: "TASTE_SCORE_UPDATE",
         title: `Called it ✓ ${call.creator.displayName}`,
         body: `"${call.question}" resolved ${winningSide}. ${w.s.points} staked → ${payout} Taste Points.`,
-        link: `/calls`,
+        link: `/calls?win=${callId}`,
       });
     }
     for (const s of losers) {

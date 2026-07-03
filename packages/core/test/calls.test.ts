@@ -55,6 +55,37 @@ describe("calls: prediction layer", () => {
     await expect(callsMod.stake(poor.id, call.id, "YES", 10)).rejects.toMatchObject({ code: "NOT_ENOUGH_POINTS" });
   });
 
+  it("keeps a taste streak: first stake starts it, a next-day stake extends it, a gap resets it", async () => {
+    const { owner, creator } = await liveCreator();
+    const fan = await makeUser();
+    await givePoints(fan.id, 100);
+    const mkCall = (question: string) =>
+      callsMod.createCall(owner.id, { creatorId: creator.id, question, metric: "FAME_SCORE", threshold: 50 });
+
+    const c1 = await mkCall("Will MIRA reach Fame Score 50 in time? (one)");
+    await callsMod.stake(fan.id, c1.id, "YES", 10);
+    let row = await prisma.user.findUniqueOrThrow({ where: { id: fan.id } });
+    expect(row.callStreak).toBe(1);
+
+    // Pretend the last stake happened yesterday → next stake extends the streak.
+    const yesterday = new Date();
+    yesterday.setUTCHours(0, 0, 0, 0);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    await prisma.user.update({ where: { id: fan.id }, data: { lastStakeDay: yesterday } });
+    const c2 = await mkCall("Will MIRA reach Fame Score 50 in time? (two)");
+    await callsMod.stake(fan.id, c2.id, "YES", 10);
+    row = await prisma.user.findUniqueOrThrow({ where: { id: fan.id } });
+    expect(row.callStreak).toBe(2);
+
+    // A three-day gap resets to 1.
+    const lastWeek = new Date(yesterday.getTime() - 3 * 24 * 60 * 60 * 1000);
+    await prisma.user.update({ where: { id: fan.id }, data: { lastStakeDay: lastWeek } });
+    const c3 = await mkCall("Will MIRA reach Fame Score 50 in time? (three)");
+    await callsMod.stake(fan.id, c3.id, "YES", 10);
+    row = await prisma.user.findUniqueOrThrow({ where: { id: fan.id } });
+    expect(row.callStreak).toBe(1);
+  });
+
   it("auto-resolves at deadline from the live metric and pays parimutuel with largest remainder", async () => {
     const { owner, creator } = await liveCreator(); // fameScore 30
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
