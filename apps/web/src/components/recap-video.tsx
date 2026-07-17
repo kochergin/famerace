@@ -27,7 +27,7 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 type Scene = (ctx: CanvasRenderingContext2D, t: number) => void;
 
 function display(ctx: CanvasRenderingContext2D, size: number) {
-  ctx.font = `${size}px "Archivo Black", "Arial Black", sans-serif`;
+  ctx.font = `800 ${size}px "Big Shoulders", "Arial Narrow", "Arial Black", sans-serif`;
 }
 function mono(ctx: CanvasRenderingContext2D, size: number) {
   ctx.font = `${size}px "JetBrains Mono", monospace`;

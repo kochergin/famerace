@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { unstable_ViewTransition as ViewTransition } from "react";
-import { Archivo_Black, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Big_Shoulders, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { copy, draftday, notify } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { currentUser } from "@/lib/session";
@@ -13,7 +13,7 @@ import { NavLink } from "@/components/nav-link";
 import { TabBar } from "@/components/tab-bar";
 import "./globals.css";
 
-const display = Archivo_Black({ weight: "400", subsets: ["latin"], variable: "--font-display-web" });
+const display = Big_Shoulders({ weight: "800", subsets: ["latin"], variable: "--font-display-web" });
 const body = Space_Grotesk({ subsets: ["latin"], variable: "--font-body-web" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-web" });
 

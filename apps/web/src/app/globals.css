@@ -77,10 +77,11 @@ select:focus-visible {
   scrollbar-color: var(--color-edge) transparent;
 }
 
-/* Poster-style display headings (§0B.4: wide/condensed/bold, athletic) */
+/* Poster-style display headings (§0B.4: condensed/bold, athletic marquee).
+   Big Shoulders is a tall condensed grotesque loaded at 800 — the brand face. */
 .display {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.01em;
   line-height: 0.94;

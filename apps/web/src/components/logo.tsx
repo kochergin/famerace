@@ -1,29 +1,29 @@
-/* The FameRace mark: the Star Flag. A race flag flying at full speed with a
-   five-point star cut out of it in negative space — fame (the star), the race
-   (the flag), and the product's core act (planting your flag on someone's
-   rise) in one solid glyph. One color, one shape, readable at 16px. */
+/* The FameRace mark: NOVA — a rising star with a comet trail. A four-point
+   star (fame, the spark) lifting on a swept trail (the rise, the momentum):
+   "Back the rise" as one glyph — a rising star you catch early. One color,
+   one gesture, readable at 16px. Authored in a 0..100 box. */
 
-export const MARK_FLAG_PATH =
-  "M13 8 C 28 0, 40 16, 59 5 L 59 36 C 44 47, 32 31, 13 39 Z " +
-  "M33.45,10.57 L38.49,17.89 L47.19,16.12 L41.79,23.17 L46.15,30.90 L37.78,27.94 " +
-  "L31.78,34.48 L32.01,25.61 L23.93,21.92 L32.44,19.39 Z";
+export const MARK_TRAIL_PATH = "M14,94 Q47,76 59,49 Q55,71 41,84 Q29,91 14,94 Z";
+export const MARK_STAR_PATH = "M66,13 L74,32 L87,40 L74,48 L66,67 L58,48 L45,40 L58,32 Z";
 
 export function LogoMark({
   className = "h-7 w-7",
   glow = false,
+  fill = "#c9f73a",
 }: {
   className?: string;
   glow?: boolean;
+  fill?: string;
 }) {
   return (
     <svg
-      viewBox="0 0 64 64"
+      viewBox="2 6 96 96"
       className={className}
       aria-hidden
       style={glow ? { filter: "drop-shadow(0 0 8px rgb(201 247 58 / 0.55))" } : undefined}
     >
-      <path fillRule="evenodd" fill="#c9f73a" d={MARK_FLAG_PATH} />
-      <rect x="8" y="4" width="5.5" height="56" rx="2.75" fill="#c9f73a" />
+      <path d={MARK_TRAIL_PATH} fill={fill} />
+      <path d={MARK_STAR_PATH} fill={fill} />
     </svg>
   );
 }
