@@ -4,7 +4,7 @@ import { users } from "@famerace/core";
 import { prisma } from "@famerace/db";
 import { withErrorRedirect } from "@/lib/action";
 import { FormError } from "@/components/form-error";
-import { LogoMark } from "@/components/logo";
+import { LogoMark, NovaSpark } from "@/components/logo";
 import { setSessionCookie } from "@/lib/session";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -50,7 +50,7 @@ export default async function LoginPage({
       <p className="stat mt-5 text-[10px] uppercase tracking-[0.35em] text-muted">Stage door</p>
       <h1 className="display mt-2 text-5xl">Welcome back.</h1>
       <p className="mt-2 text-sm text-muted">
-        <span className="pulse-soft mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-lime align-middle" />
+        <NovaSpark twinkle className="mr-1 inline-block h-3 w-3 align-middle text-lime" />
         {pulse}
       </p>
       <form action={loginAction} className="mt-8 space-y-3 text-left">

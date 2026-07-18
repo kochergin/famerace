@@ -461,7 +461,7 @@ export default async function CreatorPage({
                     </span>
                   ))}
                 </div>
-                <ul className="list-inside list-disc text-xs text-muted">
+                <ul className="spark-list text-xs text-muted">
                   <li>${m.ticker} access/status units on the live curve</li>
                   <li>Permanent backer rank on first back</li>
                   <li>Holder-gated Backstage eligibility</li>
@@ -533,7 +533,7 @@ export default async function CreatorPage({
                   ))}
                 </div>
                 {perks.length ? (
-                  <ul className="list-inside list-disc text-xs text-muted">
+                  <ul className="spark-list text-xs text-muted">
                     {perks.map((perk) => (
                       <li key={perk}>{perk}</li>
                     ))}
@@ -559,7 +559,7 @@ export default async function CreatorPage({
                   ))}
                 </div>
                 {perks.length ? (
-                  <ul className="list-inside list-disc text-xs text-muted">
+                  <ul className="spark-list text-xs text-muted">
                     {perks.map((perk) => (
                       <li key={perk}>{perk}</li>
                     ))}

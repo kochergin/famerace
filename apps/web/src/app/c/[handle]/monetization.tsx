@@ -237,7 +237,7 @@ function TierCard({ tier, handle, signedIn }: { tier: BackstageTier; handle: str
         </span>
       </div>
       {benefits.length ? (
-        <ul className="mt-2 list-inside list-disc text-xs text-muted">
+        <ul className="mt-2 spark-list text-xs text-muted">
           {benefits.map((benefit) => (
             <li key={benefit}>{benefit}</li>
           ))}

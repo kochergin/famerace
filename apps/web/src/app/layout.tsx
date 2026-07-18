@@ -7,7 +7,7 @@ import { prisma } from "@famerace/db";
 import { currentUser } from "@/lib/session";
 import { CommandPalette, SearchButton } from "@/components/command-palette";
 import { Countdown } from "@/components/countdown";
-import { Logo } from "@/components/logo";
+import { Logo, NovaSpark, SparkRule } from "@/components/logo";
 import { Monogram } from "@/components/monogram";
 import { NavLink } from "@/components/nav-link";
 import { TabBar } from "@/components/tab-bar";
@@ -144,7 +144,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             href="/draft-day"
             className="block border-b border-pink/40 bg-pink/15 px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest text-pink transition hover:bg-pink/20"
           >
-            <span className="pulse-soft mr-1.5 inline-block h-2 w-2 rounded-full bg-pink align-middle" />
+            <NovaSpark twinkle className="mr-1.5 inline-block h-3.5 w-3.5 align-middle text-pink" />
             Draft Day is live — the board is revealing now →
           </Link>
         ) : null}
@@ -162,6 +162,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </div>
         <footer className="border-t border-edge py-8 text-center text-xs text-muted">
+          <SparkRule className="mx-auto mb-6 max-w-[220px]" />
           <p className="mb-1 flex justify-center">
             <Logo markClass="h-5 w-5" textClass="text-lg" />
           </p>

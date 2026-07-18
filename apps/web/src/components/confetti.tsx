@@ -27,6 +27,19 @@ export function Confetti({ fireKey }: { fireKey: string }) {
     }
     ctx.scale(dpr, dpr);
 
+    // A NOVA star, centered at the current origin, radius r (points are the
+    // brand mark's proportions normalized to a unit).
+    const STAR: [number, number][] = [
+      [0, -1], [0.29, -0.29], [0.78, 0], [0.29, 0.29],
+      [0, 1], [-0.29, 0.29], [-0.78, 0], [-0.29, -0.29],
+    ];
+    const drawStar = (r: number) => {
+      ctx.beginPath();
+      STAR.forEach(([x, y], i) => (i ? ctx.lineTo(x * r, y * r) : ctx.moveTo(x * r, y * r)));
+      ctx.closePath();
+      ctx.fill();
+    };
+
     const w = window.innerWidth;
     const particles = Array.from({ length: 90 }, () => {
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.6;
@@ -63,7 +76,7 @@ export function Confetti({ fireKey }: { fireKey: string }) {
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot);
         ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        drawStar(p.size * 1.1);
         ctx.restore();
       }
       frame = requestAnimationFrame(tick);

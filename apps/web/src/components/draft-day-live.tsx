@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { sendReactionAction } from "@/app/actions/react";
+import { NovaSpark } from "@/components/logo";
 
 /* The crowd layer: live watcher count + emoji reactions floating up the side.
    Every reaction is broadcast — you see the room reacting in real time. */
@@ -56,7 +57,7 @@ export function DraftDayLive() {
 
       <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-3">
         <span className="stat text-xs uppercase tracking-widest text-muted">
-          <span className="pulse-soft mr-1.5 inline-block h-2 w-2 rounded-full bg-lime align-middle" />
+          <NovaSpark twinkle className="mr-1.5 inline-block h-3.5 w-3.5 align-middle text-lime" />
           <span className="font-bold text-chalk" suppressHydrationWarning>
             {watching ?? "—"}
           </span>{" "}

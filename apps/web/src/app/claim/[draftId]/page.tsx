@@ -61,7 +61,7 @@ export default async function ClaimPage({
 
       <div className="card mt-6 p-6">
         <h2 className="display text-2xl">What claiming means</h2>
-        <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-muted">
+        <ul className="mt-3 spark-list space-y-1 text-sm text-muted">
           <li>You verify your identity and social accounts — no market goes live without your consent.</li>
           <li>You configure your first mission, perks and payout before anything opens.</li>
           <li>Pledged demand converts only at your official launch, through a fair opening auction.</li>

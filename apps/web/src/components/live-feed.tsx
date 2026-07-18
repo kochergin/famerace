@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NovaSpark } from "@/components/logo";
 
 type FeedEvent = {
   id: string;
@@ -58,7 +59,7 @@ export function LiveFeed({ limit = 14 }: { limit?: number }) {
       <div className="mb-2 flex items-center justify-between">
         <h2 className="display text-xl">Live</h2>
         <span className={`chip ${live ? "bg-lime/15 text-lime" : "bg-edge text-muted"}`}>
-          <span className={live ? "pulse-soft" : ""}>●</span> {live ? "on air" : "connecting"}
+          <NovaSpark twinkle={live} className="inline-block h-2.5 w-2.5 align-middle" /> {live ? "on air" : "connecting"}
         </span>
       </div>
       {events.length === 0 ? (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Confetti } from "@/components/confetti";
+import { NovaSpark } from "@/components/logo";
 import { Countdown } from "@/components/countdown";
 import { Monogram } from "@/components/monogram";
 
@@ -94,7 +95,7 @@ export function DraftDayShow({
           DRAFT DAY <span className="text-pink">— THE REVEAL</span>
         </h1>
         <span className="chip border border-pink/60 bg-pink/10 text-pink">
-          <span className="pulse-soft mr-1 inline-block h-2 w-2 rounded-full bg-pink" />
+          <NovaSpark twinkle className="mr-1 inline-block h-3.5 w-3.5 align-middle text-pink" />
           {done ? "Complete" : "On air"}
         </span>
       </div>

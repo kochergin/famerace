@@ -507,6 +507,37 @@ body::after {
   100% { transform: scale(1) rotate(0deg); }
 }
 
+/* Star bullets — lime NOVA sparks replace generic discs on perk/benefit lists. */
+.spark-list {
+  list-style: none;
+  padding-left: 0;
+}
+.spark-list > li {
+  position: relative;
+  padding-left: 1.4em;
+}
+.spark-list > li::before {
+  content: "";
+  position: absolute;
+  left: 0.1em;
+  top: 0.42em;
+  width: 0.62em;
+  height: 0.62em;
+  background-color: var(--color-lime);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 5L63 37L85 50L63 63L50 95L37 63L15 50L37 37Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 5L63 37L85 50L63 63L50 95L37 63L15 50L37 37Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* A standalone spark that breathes — live / on-air pips. */
+.spark-twinkle {
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .spark-twinkle {
+    animation: nova-twinkle 2.2s ease-in-out infinite;
+  }
+}
+
 /* The chant: giant outlined type scrolling behind the footer */
 .chant {
   font-family: var(--font-display);

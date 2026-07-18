@@ -99,7 +99,7 @@ export function BackBox({
         </div>
       </div>
 
-      <ul className="list-inside list-disc text-xs text-muted">
+      <ul className="spark-list text-xs text-muted">
         <li>${ticker} access/status units on the live curve</li>
         <li>Permanent backer rank on first back</li>
         <li>Holder-gated Backstage eligibility</li>
