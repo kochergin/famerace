@@ -46,7 +46,7 @@ export default async function LoginPage({
     <div className="relative mx-auto max-w-md overflow-x-clip py-10 text-center">
       <span aria-hidden className="beam beam-a left-[6%]" />
       <span aria-hidden className="beam beam-pink beam-b right-[6%]" />
-      <LogoMark glow className="mx-auto h-11 w-11" />
+      <LogoMark glow animate className="mx-auto h-11 w-11" />
       <p className="stat mt-5 text-[10px] uppercase tracking-[0.35em] text-muted">Stage door</p>
       <h1 className="display mt-2 text-5xl">Welcome back.</h1>
       <p className="mt-2 text-sm text-muted">

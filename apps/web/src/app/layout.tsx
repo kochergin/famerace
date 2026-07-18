@@ -18,8 +18,21 @@ const body = Space_Grotesk({ subsets: ["latin"], variable: "--font-body-web" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-web" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://famerace.app"),
   title: "FameRace — Back the rise.",
   description: copy.oneLiner,
+  // opengraph-image.png / twitter-image.png (app root) are auto-attached by Next.
+  openGraph: {
+    type: "website",
+    siteName: "FameRace",
+    title: "FameRace — Back the rise.",
+    description: copy.oneLiner,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FameRace — Back the rise.",
+    description: copy.oneLiner,
+  },
 };
 
 const NAV = [

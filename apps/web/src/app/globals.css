@@ -472,6 +472,41 @@ body::after {
   from { transform: scaleX(0); }
 }
 
+/* NOVA — the living star. On `animate` placements the trail shoots out from
+   the star on mount and the star breathes; hovering the wordmark twinkles it.
+   All motion is gated behind prefers-reduced-motion. */
+.nova-trail,
+.nova-star {
+  transform-box: fill-box;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nova-animate .nova-trail {
+    transform-origin: 100% 0%; /* the star-end corner of the trail's box */
+    animation: nova-trail-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .nova-animate .nova-star {
+    transform-origin: center;
+    animation: nova-twinkle 4.5s ease-in-out 900ms infinite;
+  }
+  .nova-hover:hover .nova-star {
+    transform-origin: center;
+    animation: nova-pop 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes nova-trail-in {
+  from { transform: scale(0.12); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes nova-twinkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  45% { transform: scale(1.07); opacity: 0.9; }
+}
+@keyframes nova-pop {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.15) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
 /* The chant: giant outlined type scrolling behind the footer */
 .chant {
   font-family: var(--font-display);

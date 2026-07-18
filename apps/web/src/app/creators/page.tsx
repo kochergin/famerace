@@ -72,7 +72,7 @@ export default async function CreatorsPage({
       <section className="relative overflow-x-clip py-10 text-center">
         <span aria-hidden className="beam beam-a left-[8%]" />
         <span aria-hidden className="beam beam-pink beam-b right-[8%]" />
-        <LogoMark glow className="mx-auto h-11 w-11" />
+        <LogoMark glow animate className="mx-auto h-11 w-11" />
         <p className="stat mt-5 text-[10px] uppercase tracking-[0.35em] text-muted">For creators · Season 1 open</p>
         <h1 className="display mx-auto mt-3 max-w-2xl text-5xl leading-tight sm:text-7xl">
           You sell nothing.

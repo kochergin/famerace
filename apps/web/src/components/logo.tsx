@@ -10,20 +10,24 @@ export function LogoMark({
   className = "h-7 w-7",
   glow = false,
   fill = "#c9f73a",
+  animate = false,
 }: {
   className?: string;
   glow?: boolean;
   fill?: string;
+  // `animate` = the ignition: trail draws in on mount, star twinkles. Reserve
+  // for focal single-mark moments (login, ceremonies); reduced-motion safe.
+  animate?: boolean;
 }) {
   return (
     <svg
       viewBox="2 6 96 96"
-      className={className}
+      className={`${animate ? "nova-animate " : ""}${className}`}
       aria-hidden
       style={glow ? { filter: "drop-shadow(0 0 8px rgb(201 247 58 / 0.55))" } : undefined}
     >
-      <path d={MARK_TRAIL_PATH} fill={fill} />
-      <path d={MARK_STAR_PATH} fill={fill} />
+      <path className="nova-trail" d={MARK_TRAIL_PATH} fill={fill} />
+      <path className="nova-star" d={MARK_STAR_PATH} fill={fill} />
     </svg>
   );
 }
@@ -35,8 +39,9 @@ export function Logo({
   markClass?: string;
   textClass?: string;
 }) {
+  // `nova-hover` twinkles the star when the wordmark is hovered.
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="nova-hover inline-flex items-center gap-2">
       <LogoMark className={markClass} />
       <span className={`display leading-none tracking-tight ${textClass}`}>
         <span className="text-chalk">FAME</span>
